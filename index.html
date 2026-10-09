@@ -178,8 +178,21 @@ body.chatting .top{border-bottom-color:var(--line)}
 .batch-head h1{margin:0 0 6px;font-size:30px;letter-spacing:-.6px}
 .batch-head p{margin:0 0 14px;color:var(--ink2);font-size:16px}
 .batch-head .eyebrow{margin-bottom:10px}
-#batchIn{width:100%;border:1px solid var(--line2);border-radius:14px;padding:12px 14px;font:inherit;font-size:16px;background:var(--surface);resize:vertical;min-height:140px;tab-size:4}
-#batchIn:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(176,83,44,.14)}
+.bgrid-wrap{overflow-x:auto;border:1px solid var(--line2);border-radius:14px;background:var(--surface)}
+.bgrid{width:100%;min-width:760px;border-collapse:collapse;table-layout:fixed}
+.bgrid th{background:var(--track);color:var(--ink2);font-size:14px;font-weight:700;padding:8px 6px;text-align:left;border-bottom:1px solid var(--line2);white-space:nowrap}
+.bgrid th em{font-style:normal;color:var(--primary);font-size:12.5px;margin-left:3px}
+.bgrid td{padding:0;border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
+.bgrid tr > :last-child{border-right:0}
+.bgrid tbody tr:last-child td{border-bottom:0}
+.bgrid input{width:100%;border:0;background:none;font:inherit;font-size:16px;padding:9px 8px;color:var(--ink)}
+.bgrid input:focus{outline:2px solid var(--primary);outline-offset:-2px;background:#fff}
+.bgrid input.invalid{background:var(--warn-soft);color:var(--warn)}
+.bgrid .c-no{width:56px}.bgrid .c-name{width:90px}.bgrid .c-birth{width:120px}.bgrid .c-dept{width:200px}.bgrid .c-rank{width:100px}.bgrid .c-del{width:34px}
+.bgrid .c-no input{text-align:center}
+.g-del{border:0;background:none;color:var(--ink3);font-size:18px;line-height:1;width:100%;padding:9px 0;cursor:pointer}
+.g-del:hover{color:var(--bad)}
+.bgrid-tools{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:8px 2px 0;font-size:14px;color:var(--ink2)}
 .batch-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0 4px}
 .batch-sum{flex:1;color:var(--ink2);font-size:15px}
 .batch-err{color:var(--bad);font-weight:600;margin:6px 2px}
@@ -189,6 +202,8 @@ body.chatting .top{border-bottom-color:var(--line)}
 .b-top{display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:center}
 .b-no{font-weight:800;font-size:18px;color:var(--ink2);text-align:center;font-variant-numeric:tabular-nums}
 .b-addr{font-weight:700}
+.b-who{font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:1px}
+.b-who span{font-weight:400;color:var(--ink2)}
 .b-sub{font-size:14.5px;color:var(--ink2);margin-top:2px}
 .b-sub b{color:var(--in)}
 .b-state{display:flex;align-items:center;gap:10px;justify-content:flex-end}
@@ -371,10 +386,20 @@ body.chatting .top{border-bottom-color:var(--line)}
   <section class="batch-head">
     <div class="eyebrow">담당자용</div>
     <h1>일괄 조회</h1>
-    <p>엑셀에서 <b>연번</b>과 <b>주소</b> 두 열을 복사해 아래에 붙여넣으세요. 한 줄에 한 명씩, 동·호수는 빼고 단지까지만 적습니다.<br>
-    이름은 넣지 않습니다. 결과지의 인적사항 칸은 비워 두니 출력한 뒤 적어 주세요.</p>
+    <p>엑셀 명단을 <b>제목 줄까지</b> 복사해 표의 아무 칸에나 붙여넣으면 제목에 맞춰 채웁니다. 직접 적어도 됩니다.<br>
+    <b>주소</b>만 꼭 필요합니다. 동·호수는 빼고 단지까지만 적고, 비운 칸은 결과지에 빈칸으로 나옵니다.</p>
   </section>
-  <textarea id="batchIn" rows="7" spellcheck="false" placeholder="1&#9;수원시 장안구 창룡대로 223&#10;2&#9;영통 래미안&#10;3&#9;평택시 중앙로 67"></textarea>
+  <div class="bgrid-wrap">
+    <table class="bgrid" id="batchGrid">
+      <thead><tr><th class="c-no">연번</th><th class="c-name">성명</th><th class="c-birth">생년월일</th><th class="c-dept">소속</th><th class="c-rank">직급</th><th class="c-addr">주소<em>필수</em></th><th class="c-del"></th></tr></thead>
+      <tbody id="batchBody"></tbody>
+    </table>
+  </div>
+  <div class="bgrid-tools">
+    <button class="b-link" id="batchAddRow" type="button">+ 줄 추가</button>
+    <button class="b-link" id="batchClearGrid" type="button">표 비우기</button>
+    <span>명단은 이 화면에만 있고 저장되지 않습니다. 조회에는 주소만 쓰입니다.</span>
+  </div>
   <div class="batch-bar">
     <button class="btn primary" id="batchRun" type="button">조회 시작</button>
     <span class="batch-sum" id="batchSum"></span>
@@ -812,8 +837,12 @@ const isExpired = () => !!expiresAt && new Date() >= expiresAt;
 
 const $ = (id) => document.getElementById(id);
 
+// 1990-03-15, 19900315, 1990.3.15, 900315 모두 받는다
 function normalizeBirth(v) {
-  const d = v.replace(/\D/g, "");
+  const parts = String(v).trim().split(/\D+/).filter(Boolean);
+  let d = parts.join("");
+  if (parts.length === 3 && parts[0].length === 4 && parts[1].length <= 2 && parts[2].length <= 2) d = parts[0] + parts[1].padStart(2, "0") + parts[2].padStart(2, "0");
+  if (d.length === 6) { const yy = +d.slice(0, 2); d = (yy > new Date().getFullYear() % 100 ? "19" : "20") + d; }
   if (d.length !== 8) return null;
   const y = +d.slice(0, 4), m = +d.slice(4, 6), day = +d.slice(6, 8);
   const dt = new Date(y, m - 1, day);
@@ -1189,7 +1218,7 @@ function readPerson() {
   return name && dept && rank && birth ? { name, birth, dept, rank } : null;
 }
 
-// 결과지 한 장. p.no(연번)가 있으면 담당자용 일괄 인쇄: 인적사항 칸은 비워 두고 출력 후 적는다.
+// 결과지 한 장. p.no(연번)가 있으면 담당자용 일괄 인쇄: 표에 적은 인적사항을 넣고, 비운 칸은 출력 후 적도록 빈칸으로 둔다.
 function docHtml(r, p) {
   const { inList } = stats(r);
   const kmText = (x) => fmtKm(x.km) + (r.kmSrc.get(x.st.name) === "manual" ? "*" : "");
@@ -1199,11 +1228,11 @@ function docHtml(r, p) {
         inList.map((x, i) => `<tr><td>${i + 1}</td><td>${esc(x.st.name)}</td><td class="l">${esc(x.st.addr)}</td><td>${kmText(x)}</td></tr>`).join("")
       }</tbody></table>`
     : '<div class="none">18km 이내 경찰서가 없습니다.</div>';
-  const blank = '<td class="blank"></td>';
+  const cell = (v, span) => `<td${v ? "" : ' class="blank"'}${span ? ' colspan="3"' : ""}>${v ? esc(v) : ""}</td>`;
   const who = p.no != null
-    ? `<tr><th>연번</th><td>${esc(p.no)}</td><th>성명</th>${blank}</tr>
-    <tr><th>생년월일</th>${blank}<th>직급</th>${blank}</tr>
-    <tr><th>소속</th><td class="blank" colspan="3"></td></tr>`
+    ? `<tr><th>연번</th><td>${esc(p.no)}</td><th>성명</th>${cell(p.name)}</tr>
+    <tr><th>생년월일</th>${cell(p.birth)}<th>직급</th>${cell(p.rank)}</tr>
+    <tr><th>소속</th>${cell(p.dept, true)}</tr>`
     : `<tr><th>성명</th><td>${esc(p.name)}</td><th>생년월일</th><td>${esc(p.birth)}</td></tr>
     <tr><th>소속</th><td>${esc(p.dept)}</td><th>직급</th><td>${esc(p.rank)}</td></tr>`;
   return `
@@ -1271,10 +1300,10 @@ function fallbackCopy(text, done) {
 }
 
 function resetAll() {
-  if ((results.size || batch.rows.length || $("batchIn").value) && !confirm("조회 결과와 입력한 내용을 모두 지울까요?")) return;
+  if ((results.size || batch.rows.length || readGrid().rows.length) && !confirm("조회 결과와 입력한 내용을 모두 지울까요?")) return;
   results.clear();
   batch.rows = [];
-  $("batchIn").value = "";
+  resetGrid();
   $("batchErr").hidden = true;
   renderBatch();
   $("thread").innerHTML = "";
@@ -1285,7 +1314,7 @@ function resetAll() {
   setChatting(false);
   showExpired();
   window.scrollTo({ top: 0 });
-  ($("batchMain").hidden ? $("q") : $("batchIn")).focus();
+  ($("batchMain").hidden ? $("q") : $("batchBody").querySelector("input")).focus();
 }
 
 // 사용 기한이 지난 배포본은 입력을 막고 안내만 보여 준다.
@@ -1431,27 +1460,110 @@ document.addEventListener("keydown", (e) => {
 const batch = { rows: [], running: false };
 const B_STATE = { wait: "대기", run: "조회 중…", pick: "주소 확인 필요", input: "거리 입력 필요", fail: "확인 필요", done: "완료" };
 
-// 엑셀에서 복사한 표(탭 구분) 또는 "연번 주소" 형태의 줄을 읽는다. 머리글 줄은 건너뛴다.
-function parseBatch(text) {
-  const rows = [];
-  for (const raw of String(text).split(/\r?\n/)) {
-    const line = raw.trim();
-    if (!line) continue;
-    let no, addr;
-    if (line.includes("\t")) {
-      const cells = line.split("\t").map((c) => c.trim());
-      no = cells[0]; addr = cells.slice(1).filter(Boolean).join(" ");
-    } else {
-      const m = line.match(/^(\S+)\s+(.+)$/);
-      if (!m) continue;
-      no = m[1]; addr = m[2];
-    }
-    if (/^(연번|번호|순번|no\.?)$/i.test(no) || /^주소/.test(addr)) continue;
-    addr = addr.replace(/\s+/g, " ").trim();
-    if (no && addr) rows.push({ no, addr, status: "wait", msg: "", cands: [], rid: null, open: false });
-  }
-  return rows;
+// 입력 표: 칸마다 직접 적거나, 엑셀에서 복사한 명단을 붙여넣는다. 제목 줄이 있으면 제목을 보고 열을 맞춘다.
+const GRID_COLS = ["no", "name", "birth", "dept", "rank", "addr"];
+const GRID_TITLE = { no: "연번", name: "성명", birth: "생년월일", dept: "소속", rank: "직급", addr: "주소" };
+const GRID_HEAD = {
+  no: ["연번", "번호", "순번", "no"],
+  name: ["성명", "이름"],
+  birth: ["생년월일", "생일", "출생일"],
+  dept: ["소속", "부서", "소속부서", "근무부서"],
+  rank: ["직급", "계급", "직위"],
+  addr: ["주소", "주거지", "거주지", "주소지", "현주소", "도로명주소"],
+};
+const headKey = (cell) => {
+  const t = cell.replace(/\(.*?\)|\s/g, "").replace(/\.$/, "").toLowerCase();
+  return GRID_COLS.find((k) => GRID_HEAD[k].includes(t)) || null;
+};
+const cellText = (x) => x.value.trim().replace(/\s+/g, " ");
+
+function gridRowHtml(first) {
+  const hint = { birth: "1990-03-15", addr: "예: 수원시 장안구 창룡대로 223" };
+  return `<tr>${GRID_COLS.map((k) => `<td><input data-k="${k}" spellcheck="false" autocomplete="off" aria-label="${GRID_TITLE[k]}"${k === "birth" ? ' inputmode="numeric"' : ""}${first && hint[k] ? ` placeholder="${hint[k]}"` : ""}></td>`).join("")}<td><button class="g-del" type="button" title="이 줄 지우기" aria-label="이 줄 지우기">×</button></td></tr>`;
 }
+function addGridRows(n) {
+  const body = $("batchBody");
+  for (let i = 0; i < n; i++) body.insertAdjacentHTML("beforeend", gridRowHtml(!body.rows.length));
+}
+const gridEmpty = (tr) => [...tr.querySelectorAll("input")].every((x) => !x.value.trim());
+// 마지막 줄에 적기 시작하면 빈 줄을 하나 더 둔다
+function keepSpareRow() {
+  const body = $("batchBody");
+  if (!body.rows.length || !gridEmpty(body.rows[body.rows.length - 1])) addGridRows(1);
+}
+function resetGrid() { $("batchBody").innerHTML = ""; addGridRows(5); }
+
+// 빈 줄은 건너뛰고, 연번을 비우면 순서대로 붙인다. 생년월일은 YYYY-MM-DD로 맞춘다.
+function readGrid() {
+  const rows = [];
+  let bad = null;
+  for (const tr of $("batchBody").rows) {
+    if (gridEmpty(tr)) continue;
+    const g = { tr };
+    for (const x of tr.querySelectorAll("input")) g[x.dataset.k] = cellText(x);
+    if (g.birth) {
+      const b = normalizeBirth(g.birth);
+      if (b) g.birth = b; else bad = bad || tr.querySelector('[data-k="birth"]');
+    }
+    rows.push(g);
+  }
+  rows.forEach((g, i) => { if (!g.no) g.no = String(i + 1); });
+  return { rows, bad };
+}
+
+function fixBirth(x) {
+  const v = x.value.trim(), b = v && normalizeBirth(v);
+  if (b) x.value = b;
+  x.classList.toggle("invalid", !!v && !b);
+}
+
+// 엑셀 복사 내용(탭·줄바꿈 구분)을 칸 배열로
+function parseClip(text) {
+  return text.replace(/\r\n?/g, "\n").replace(/\n+$/, "").split("\n")
+    .map((l) => l.split("\t").map((c) => c.trim().replace(/^"([\s\S]*)"$/, "$1").trim()))
+    .filter((cells) => cells.some(Boolean));
+}
+
+function pasteGrid(input, text) {
+  let rows = parseClip(text);
+  if (!rows.length) return;
+  let cols;
+  const head = rows[0].map(headKey);
+  if (head.filter(Boolean).length >= 2) { cols = head; rows = rows.slice(1); }
+  else {
+    const start = GRID_COLS.indexOf(input.dataset.k);
+    const width = Math.max(...rows.map((c) => c.length));
+    // '연번·주소' 두 열만 첫 칸에 붙여넣으면 주소 칸으로 보낸다
+    cols = start === 0 && width === 2 ? ["no", "addr"] : Array.from({ length: width }, (_, i) => GRID_COLS[start + i] || null);
+  }
+  const body = $("batchBody");
+  let tr = input.closest("tr");
+  for (const cells of rows) {
+    if (!tr) { addGridRows(1); tr = body.rows[body.rows.length - 1]; }
+    cols.forEach((k, i) => { if (k) tr.querySelector(`[data-k="${k}"]`).value = cells[i] || ""; });
+    const b = tr.querySelector('[data-k="birth"]');
+    if (b.value) fixBirth(b); else b.classList.remove("invalid");
+    syncRow(tr);
+    tr = tr.nextElementSibling;
+  }
+  keepSpareRow();
+  $("batchErr").hidden = true;
+}
+
+// 조회한 뒤 표에서 인적사항을 고치면 결과지에 바로 반영한다. (주소를 고친 줄은 다시 조회해야 한다)
+function syncRow(tr) {
+  const row = batch.rows.find((r) => r.tr === tr);
+  if (!row) return;
+  const v = (k) => cellText(tr.querySelector(`[data-k="${k}"]`));
+  row.no = v("no") || row.no; row.name = v("name"); row.dept = v("dept"); row.rank = v("rank");
+  row.birth = normalizeBirth(v("birth")) || v("birth");
+  const i = batch.rows.indexOf(row);
+  const top = $("batchList").querySelector(`.brow[data-i="${i}"] .b-top`);
+  if (top) top.innerHTML = batchTopHtml(row, i);
+}
+
+// 표의 주소가 조회한 주소와 달라진 줄
+const addrChanged = (row) => row.tr.isConnected && cellText(row.tr.querySelector('[data-k="addr"]')) !== row.addr;
 
 function batchSummaryHtml(row) {
   const r = row.rid != null ? results.get(row.rid) : null;
@@ -1465,8 +1577,10 @@ function batchTopHtml(row, i) {
   const r = row.rid != null ? results.get(row.rid) : null;
   const addr = r ? homeLabel(r.home) : row.addr;
   const toggle = r ? `<button class="b-link" type="button" data-bact="toggle" data-i="${i}">${row.open ? "접기" : "자세히"}</button>` : "";
+  const who = [row.name, row.rank].filter(Boolean).join(" ");
+  const whoHtml = who || row.dept ? `<div class="b-who">${esc(who)}${row.dept ? `<span>${who ? " · " : ""}${esc(row.dept)}</span>` : ""}</div>` : "";
   return `<div class="b-no">${esc(row.no)}</div>
-    <div><div class="b-addr">${esc(addr)}</div>${r && r.home.addr !== row.addr ? `<div class="b-sub">입력: ${esc(row.addr)}</div>` : ""}${batchSummaryHtml(row)}</div>
+    <div>${whoHtml}<div class="b-addr">${esc(addr)}</div>${r && r.home.addr !== row.addr ? `<div class="b-sub">입력: ${esc(row.addr)}</div>` : ""}${batchSummaryHtml(row)}</div>
     <div class="b-state">${toggle}<span class="badge">${B_STATE[row.status]}</span></div>`;
 }
 
@@ -1556,14 +1670,23 @@ async function runBatch() {
 function startBatch() {
   const err = (msg) => { $("batchErr").textContent = msg; $("batchErr").hidden = !msg; };
   if (isExpired()) return err(`사용 기한(${expiryText})이 지난 파일입니다. 최신 파일을 받아 주세요.`);
-  const rows = parseBatch($("batchIn").value);
-  if (!rows.length) return err("연번과 주소를 한 줄에 한 명씩 붙여넣어 주세요. (예: 1  수원시 장안구 창룡대로 223)");
+  const { rows, bad } = readGrid();
+  if (!rows.length) return err("표에 한 줄에 한 명씩 주소를 적거나, 엑셀 명단을 붙여넣어 주세요.");
+  if (bad) { bad.classList.add("invalid"); bad.focus(); return err("생년월일은 YYYY-MM-DD 형식으로 적어 주세요. (예: 1990-03-15)"); }
   err("");
   if (!keysUnlocked) return openLock(startBatch);
-  if (rows.length > 50 && !confirm(`${rows.length}명입니다. 한 사람당 길찾기를 10번 안팎 조회하므로 카카오 일일 한도를 넘을 수 있습니다. 계속할까요?`)) return;
-  if (batch.rows.length && !confirm("새 명단으로 다시 조회할까요? 지금 결과는 지워집니다.")) return;
-  for (const row of batch.rows) if (row.rid != null) results.delete(row.rid);
-  batch.rows = rows;
+  // 이미 조회한 줄은 주소가 그대로면 결과를 두고 인적사항만 새로 받는다. 새 줄·주소를 고친 줄만 조회한다.
+  const prev = new Map(batch.rows.map((r) => [r.tr, r]));
+  const next = rows.map((g) => {
+    const person = { no: g.no, name: g.name, birth: g.birth, dept: g.dept, rank: g.rank };
+    const old = prev.get(g.tr);
+    if (old && old.addr === g.addr && old.status !== "fail") { prev.delete(g.tr); return Object.assign(old, person); }
+    return { ...person, tr: g.tr, addr: g.addr, status: "wait", msg: "", cands: [], rid: null, open: false };
+  });
+  const todo = next.filter((r) => r.status === "wait").length;
+  if (todo > 50 && !confirm(`${todo}명입니다. 한 사람당 길찾기를 10번 안팎 조회하므로 카카오 일일 한도를 넘을 수 있습니다. 계속할까요?`)) return;
+  for (const old of prev.values()) if (old.rid != null) results.delete(old.rid);
+  batch.rows = next;
   renderBatch();
   runBatch();
 }
@@ -1571,9 +1694,13 @@ function startBatch() {
 function printBatch() {
   const done = batch.rows.filter((r) => r.status === "done");
   if (!done.length) return;
-  const rest = batch.rows.length - done.length;
-  if (rest && !confirm(`아직 끝나지 않은 ${rest}명은 빼고 ${done.length}명의 결과지를 만들까요?`)) return;
-  $("doc").innerHTML = done.map((row) => `<section class="pg">${docHtml(results.get(row.rid), { no: row.no })}</section>`).join("");
+  const badBirth = $("batchBody").querySelector('[data-k="birth"].invalid');
+  if (badBirth) { badBirth.focus(); return alert("생년월일 형식이 맞지 않는 칸이 있습니다. YYYY-MM-DD로 고쳐 주세요."); }
+  const moved = batch.rows.filter(addrChanged).length;
+  if (moved) return alert(`표에서 주소를 고친 줄이 ${moved}개 있습니다. '조회 시작'을 누르면 고친 줄만 다시 조회합니다.`);
+  const rest = readGrid().rows.length - done.length;
+  if (rest > 0 && !confirm(`아직 조회하지 않았거나 끝나지 않은 ${rest}명은 빼고 ${done.length}명의 결과지를 만들까요?`)) return;
+  $("doc").innerHTML = done.map((row) => `<section class="pg">${docHtml(results.get(row.rid), row)}</section>`).join("");
   printTitle = `가까운경찰서_일괄_${ymd(new Date())}`;
   openPreview();
 }
@@ -1584,7 +1711,7 @@ function setView(view) {
   $("batchMain").hidden = !isBatch;
   document.body.classList.toggle("batching", isBatch);
   for (const b of $("viewSeg").querySelectorAll("button")) b.classList.toggle("on", b.dataset.view === view);
-  (isBatch ? $("batchIn") : $("q")).focus();
+  (isBatch ? $("batchBody").querySelector("input") : $("q")).focus();
 }
 
 $("viewSeg").addEventListener("click", (e) => { const b = e.target.closest("button[data-view]"); if (b) setView(b.dataset.view); });
@@ -1599,10 +1726,71 @@ $("batchList").addEventListener("click", (e) => {
   if (b.dataset.bact === "pick") judgeRow(row, placeToHome(row.cands[+b.dataset.k]), "");
   if (b.dataset.bact === "retry") {
     const input = $("batchList").querySelector(`.b-edit input[data-i="${b.dataset.i}"]`);
-    row.addr = input.value.trim().replace(/\s+/g, " ");
+    row.addr = cellText(input);
+    if (row.tr.isConnected) row.tr.querySelector('[data-k="addr"]').value = row.addr;
     processRow(row);
   }
 });
+const gridInput = (e) => e.target.closest && e.target.closest("#batchBody input[data-k]");
+$("batchBody").addEventListener("paste", (e) => {
+  const input = gridInput(e);
+  if (!input) return;
+  const text = e.clipboardData.getData("text/plain");
+  if (!/[\t\n]/.test(text.replace(/\r\n?/g, "\n").replace(/\n+$/, ""))) return; // 한 칸짜리는 그대로 붙여넣는다
+  e.preventDefault();
+  pasteGrid(input, text);
+});
+$("batchBody").addEventListener("input", (e) => {
+  const input = gridInput(e);
+  if (!input) return;
+  input.classList.remove("invalid");
+  keepSpareRow();
+  syncRow(input.closest("tr"));
+});
+$("batchBody").addEventListener("change", (e) => {
+  const input = gridInput(e);
+  if (input && input.dataset.k === "birth") { fixBirth(input); syncRow(input.closest("tr")); }
+});
+// Enter·↓는 아래 칸, ↑는 위 칸 (엑셀처럼)
+$("batchBody").addEventListener("keydown", (e) => {
+  const input = gridInput(e);
+  if (!input || e.isComposing || e.keyCode === 229) return;
+  const dir = e.key === "Enter" || e.key === "ArrowDown" ? 1 : e.key === "ArrowUp" ? -1 : 0;
+  if (!dir) return;
+  e.preventDefault();
+  let tr = input.closest("tr")[dir > 0 ? "nextElementSibling" : "previousElementSibling"];
+  if (!tr && dir > 0) { addGridRows(1); tr = $("batchBody").lastElementChild; }
+  if (tr) tr.querySelector(`[data-k="${input.dataset.k}"]`).focus();
+});
+$("batchBody").addEventListener("click", (e) => {
+  const del = e.target.closest(".g-del");
+  if (!del) return;
+  const tr = del.closest("tr");
+  const i = batch.rows.findIndex((r) => r.tr === tr);
+  if (i >= 0) {
+    if (batch.running) return alert("조회가 끝난 뒤에 지워 주세요.");
+    if (batch.rows[i].rid != null) results.delete(batch.rows[i].rid);
+    batch.rows.splice(i, 1);
+    renderBatch();
+  }
+  tr.remove();
+  keepSpareRow();
+});
+$("batchAddRow").addEventListener("click", () => {
+  addGridRows(1);
+  $("batchBody").lastElementChild.querySelector("input").focus();
+});
+$("batchClearGrid").addEventListener("click", () => {
+  if (batch.running) return alert("조회가 끝난 뒤에 지워 주세요.");
+  if ((batch.rows.length || readGrid().rows.length) && !confirm("표에 적은 명단과 조회 결과를 모두 지울까요?")) return;
+  for (const row of batch.rows) if (row.rid != null) results.delete(row.rid);
+  batch.rows = [];
+  renderBatch();
+  resetGrid();
+  $("batchErr").hidden = true;
+  $("batchBody").querySelector("input").focus();
+});
+
 $("batchList").addEventListener("keydown", (e) => {
   if (e.key === "Enter" && e.target.matches(".b-edit input")) e.target.nextElementSibling.click();
 });
@@ -1650,6 +1838,7 @@ setMode();
 $("appFoot").textContent = `ⓒ 2026 경기도남부경찰청 경무기획과 일반직인사계 · 배포 버전 ${APP_VERSION} (${APP_RELEASE})${APP_EXPIRES ? ` · 사용 기한 ${expiryText}까지` : ""}`;
 showExpired();
 $("batchFoot").textContent = $("appFoot").textContent;
+resetGrid();
 if (APP_MODE === "batch") { $("viewSeg").hidden = false; setView("batch"); }
 else $("q").focus();
 bootUnlock();
