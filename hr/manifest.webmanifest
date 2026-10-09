@@ -1,0 +1,17 @@
+{
+  "name": "우리집에서 가까운 경찰서 찾기 (담당자용)",
+  "short_name": "경찰서 일괄조회",
+  "description": "여러 명의 주거지를 한 번에 조회하고 결과지를 일괄 인쇄합니다.",
+  "lang": "ko",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#faf5ee",
+  "theme_color": "#faf5ee",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
