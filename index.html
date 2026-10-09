@@ -216,6 +216,11 @@ body.chatting .top{border-bottom-color:var(--line)}
 .field input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(176,83,44,.14)}
 .field input.invalid{border-color:var(--bad);background:var(--bad-soft)}
 .field .err{font-size:14.5px;color:var(--bad);font-weight:600;margin-top:4px}
+.remember{display:flex;gap:8px;align-items:center;font-size:15px;color:var(--ink2);cursor:pointer}
+.remember input{width:18px;height:18px;accent-color:var(--primary)}
+.forget{margin-top:6px;text-align:center}
+.forget .link-btn{font-size:13px;color:var(--ink3)}
+.main:not(.empty) .forget{display:none}
 .sheet-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
 
 /* PDF 미리보기 */
@@ -358,6 +363,7 @@ body.chatting .top{border-bottom-color:var(--line)}
     <div class="composer-err" id="qErr" hidden></div>
     <div class="composer-notes"><span>동·호수는 빼고 단지까지만 입력</span><span>입력한 주소는 지도 검색에만 쓰이고 저장되지 않습니다</span></div>
     <div class="app-foot" id="appFoot"></div>
+    <div class="forget" id="forgetRow" hidden><button class="link-btn" id="forgetBtn" type="button">이 기기에서 잠금 기억 지우기</button></div>
   </form>
 </main>
 
@@ -397,8 +403,9 @@ body.chatting .top{border-bottom-color:var(--line)}
 <div class="modal" id="lockModal" hidden>
   <form class="sheet" id="lockForm" autocomplete="off">
     <h3>비밀번호를 입력하세요</h3>
-    <p class="sub">파일을 받을 때 함께 안내받은 비밀번호입니다. 한 번 입력하면 이 창을 닫을 때까지 다시 묻지 않습니다.</p>
+    <p class="sub">안내받은 비밀번호입니다. 접속 링크로 열면 입력하지 않아도 됩니다.</p>
     <div class="field"><label for="lockPw">비밀번호</label><input id="lockPw" type="password" autocomplete="off" spellcheck="false"><div class="err" id="lockErr" hidden></div></div>
+    <label class="remember"><input type="checkbox" id="lockRemember" checked> 이 기기에서 기억하기 (90일)</label>
     <div class="sheet-actions">
       <button class="btn" id="lockCancel" type="button">취소</button>
       <button class="btn primary" id="lockOk" type="submit">확인</button>
@@ -497,12 +504,22 @@ function esc(s) {
 let keysUnlocked = !KEY_LOCK;
 const fromB64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 
-async function unlockKeys(password) {
+// 비밀번호에서 잠금 열쇠를 만든다. 꺼낼 수 없는(non-extractable) 열쇠라 브라우저 밖으로 내보낼 수 없다.
+async function deriveLockKey(password) {
   if (!(window.crypto && crypto.subtle)) throw new Error("이 브라우저에서는 잠금을 풀 수 없습니다. 크롬이나 엣지에서 열어 주세요.");
   const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
-  const aes = await crypto.subtle.deriveKey(
+  return crypto.subtle.deriveKey(
     { name: "PBKDF2", salt: fromB64(KEY_LOCK.salt), iterations: KEY_LOCK.iter, hash: "SHA-256" },
     base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+}
+
+async function unlockKeys(password, remember) {
+  const aes = await deriveLockKey(password);
+  await openLockWith(aes);
+  if (remember) await rememberKey(aes);
+}
+
+async function openLockWith(aes) {
   let plain;
   try {
     plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: fromB64(KEY_LOCK.iv) }, aes, fromB64(KEY_LOCK.data));
@@ -513,6 +530,51 @@ async function unlockKeys(password) {
   VWORLD_KEY = keys.vworld || "";
   KAKAO_REST_KEY = keys.kakao || "";
   keysUnlocked = true;
+}
+
+// 이 기기에서 기억하기: 잠금 열쇠(꺼낼 수 없는 형태)를 이 브라우저의 IndexedDB에만 둔다. 비밀번호·키 원문은 남기지 않는다.
+// 비밀번호를 바꿔 새로 배포하면 잠금 정보(salt)가 달라져 예전 기억은 저절로 무시된다.
+const REMEMBER_DAYS = 90;
+let remembered = false;
+
+function rememberStore(mode, fn) {
+  return new Promise((resolve, reject) => {
+    const open = indexedDB.open("police18km", 1);
+    open.onupgradeneeded = () => open.result.createObjectStore("unlock");
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => {
+      const db = open.result;
+      const tx = db.transaction("unlock", mode);
+      const req = fn(tx.objectStore("unlock"));
+      tx.oncomplete = () => { db.close(); resolve(req.result); };
+      tx.onerror = () => { db.close(); reject(tx.error); };
+    };
+  });
+}
+
+async function rememberKey(aes) {
+  const until = Math.min(Date.now() + REMEMBER_DAYS * 864e5, expiresAt ? expiresAt.getTime() : Infinity);
+  try {
+    await rememberStore("readwrite", (st) => st.put({ salt: KEY_LOCK.salt, key: aes, until }, "key"));
+    remembered = true;
+  } catch (e) { /* 기억하지 못하면 다음에 다시 묻는다 */ }
+}
+
+async function recallKey() {
+  try {
+    const rec = await rememberStore("readonly", (st) => st.get("key"));
+    if (!rec || rec.salt !== KEY_LOCK.salt || !(rec.until > Date.now())) return false;
+    await openLockWith(rec.key);
+    remembered = true;
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function forgetKey() {
+  try { await rememberStore("readwrite", (st) => st.delete("key")); } catch (e) { /* 지울 것이 없음 */ }
+  remembered = false;
 }
 
 /* ---------- 주소 검색 (브이월드·카카오) ---------- */
@@ -1274,9 +1336,10 @@ $("composer").addEventListener("submit", async (e) => {
 
 let afterUnlock = null; // 비밀번호를 푼 뒤 이어서 할 일
 
-function openLock(next) {
+function openLock(next, msg) {
   afterUnlock = next || null;
-  $("lockErr").hidden = true;
+  $("lockErr").textContent = msg || "";
+  $("lockErr").hidden = !msg;
   $("lockPw").classList.remove("invalid");
   $("lockModal").hidden = false;
   $("lockPw").focus();
@@ -1295,7 +1358,7 @@ $("lockForm").addEventListener("submit", async (e) => {
   $("lockOk").disabled = true;
   $("lockOk").textContent = "확인 중…";
   try {
-    await unlockKeys(pw);
+    await unlockKeys(pw, $("lockRemember").checked);
   } catch (err) {
     $("lockErr").textContent = err.message;
     $("lockErr").hidden = false;
@@ -1309,6 +1372,7 @@ $("lockForm").addEventListener("submit", async (e) => {
   const next = afterUnlock;
   closeLock();
   setMode();
+  showForget();
   if (next) next();
 });
 $("lockCancel").addEventListener("click", () => { closeLock(); $("q").focus(); });
@@ -1543,12 +1607,52 @@ $("batchList").addEventListener("keydown", (e) => {
   if (e.key === "Enter" && e.target.matches(".b-edit input")) e.target.nextElementSibling.click();
 });
 
+function showForget() { $("forgetRow").hidden = !remembered; }
+
+$("forgetBtn").addEventListener("click", async () => {
+  if (!confirm("이 기기에 기억해 둔 잠금 해제를 지울까요? 다음에 열 때 다시 비밀번호(또는 접속 링크)가 필요합니다.")) return;
+  await forgetKey();
+  VWORLD_KEY = ""; KAKAO_REST_KEY = ""; keysUnlocked = false;
+  setMode(); showForget();
+});
+
+// 접속 링크: 주소 끝 '#k=비밀번호'로 열면 바로 잠금을 풀고 이 기기에서 기억한다. 주소창에서는 곧바로 지운다.
+// ('#' 뒤는 서버로 보내지지 않는다) 이미 열린 화면에서 링크를 다시 눌러도(주소의 # 부분만 바뀜) 처리한다.
+async function linkUnlock() {
+  const m = location.hash.match(/^#k=(.+)$/);
+  if (!m) return false;
+  history.replaceState(null, "", location.pathname + location.search);
+  let pw = "";
+  try { pw = decodeURIComponent(m[1]); } catch (e) { pw = m[1]; }
+  try {
+    await unlockKeys(pw, true);
+  } catch (e) {
+    // 이미 풀려 있으면 그대로 두고, 아니면 비밀번호 창으로 안내한다
+    if (!keysUnlocked) { setMode(); openLock(null, "접속 링크의 비밀번호가 맞지 않습니다. 최신 링크를 받거나 비밀번호를 입력해 주세요."); }
+    else alert("접속 링크의 비밀번호가 맞지 않습니다. 최신 링크인지 확인해 주세요.");
+    return true;
+  }
+  if (!$("lockModal").hidden) closeLock();
+  setMode();
+  showForget();
+  return true;
+}
+
+// 시작할 때: 접속 링크가 있으면 그것으로, 없으면 이 기기에 기억해 둔 열쇠로 잠금을 푼다.
+async function bootUnlock() {
+  if (!KEY_LOCK || isExpired()) return;
+  if (await linkUnlock()) return;
+  if (await recallKey()) { setMode(); showForget(); }
+}
+window.addEventListener("hashchange", () => { if (KEY_LOCK && !isExpired()) linkUnlock(); });
+
 setMode();
 $("appFoot").textContent = `ⓒ 2026 경기도남부경찰청 경무기획과 일반직인사계 · 배포 버전 ${APP_VERSION} (${APP_RELEASE})${APP_EXPIRES ? ` · 사용 기한 ${expiryText}까지` : ""}`;
 showExpired();
 $("batchFoot").textContent = $("appFoot").textContent;
 if (APP_MODE === "batch") { $("viewSeg").hidden = false; setView("batch"); }
 else $("q").focus();
+bootUnlock();
 </script>
 </body>
 </html>
