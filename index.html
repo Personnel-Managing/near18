@@ -178,6 +178,18 @@ body.chatting .top{border-bottom-color:var(--line)}
 .batch-head h1{margin:0 0 6px;font-size:30px;letter-spacing:-.6px}
 .batch-head p{margin:0 0 14px;color:var(--ink2);font-size:16px}
 .batch-head .eyebrow{margin-bottom:10px}
+.drop{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;border:2px dashed var(--line2);border-radius:18px;background:var(--surface);padding:26px 18px;cursor:pointer;transition:border-color .15s,background .15s}
+.drop:hover,.drop:focus-within,.drop.over{border-color:var(--primary);background:var(--primary-soft)}
+.drop svg{width:34px;height:34px;color:var(--primary)}
+.drop b{font-size:17px}
+.drop span{font-size:14px;color:var(--ink2)}
+.drop input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.drop .tap{display:none}
+@media (hover:none) and (pointer:coarse){.drop .dnd{display:none}.drop .tap{display:inline}} /* 휴대폰은 끌어다 놓기 대신 눌러서 고른다 */
+.file-info{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap;margin:10px 2px 0;font-size:15px;color:var(--ink2)}
+.file-info b{color:var(--ink)}
+.grid-toggle{margin:10px 2px 0}
+#gridBox{margin-top:10px}
 .bgrid-wrap{overflow-x:auto;border:1px solid var(--line2);border-radius:14px;background:var(--surface)}
 .bgrid{width:100%;min-width:760px;border-collapse:collapse;table-layout:fixed}
 .bgrid th{background:var(--track);color:var(--ink2);font-size:14px;font-weight:700;padding:8px 6px;text-align:left;border-bottom:1px solid var(--line2);white-space:nowrap}
@@ -386,9 +398,18 @@ body.chatting .top{border-bottom-color:var(--line)}
   <section class="batch-head">
     <div class="eyebrow">담당자용</div>
     <h1>일괄 조회</h1>
-    <p>엑셀 명단을 <b>제목 줄까지</b> 복사해 표의 아무 칸에나 붙여넣으면 제목에 맞춰 채웁니다. 직접 적어도 됩니다.<br>
-    <b>주소</b>만 꼭 필요합니다. 동·호수는 빼고 단지까지만 적고, 비운 칸은 결과지에 빈칸으로 나옵니다.</p>
+    <p>엑셀 명단 파일을 끌어다 놓으면 제목 줄을 보고 <b>연번·성명·생년월일·소속·직급·주소</b>를 읽어 바로 조회합니다.<br>
+    <b>주소</b> 열만 있으면 됩니다. 동·호수는 알아서 떼고 찾고, 없는 칸은 결과지에 빈칸으로 나옵니다.</p>
   </section>
+  <label class="drop" id="batchDrop">
+    <input type="file" id="batchFile" accept=".xlsx,.csv,.tsv,.txt">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 18v-6"/><path d="m9 15 3-3 3 3"/></svg>
+    <b class="dnd">명단 파일을 여기에 끌어다 놓거나, 눌러서 고르세요</b><b class="tap">눌러서 명단 파일을 고르세요</b>
+    <span>엑셀(.xlsx)·CSV · 파일은 이 기기 안에서만 읽고 어디에도 올리지 않습니다</span>
+  </label>
+  <div class="file-info" id="batchFileInfo" hidden></div>
+  <div class="grid-toggle"><button class="b-link" id="gridToggle" type="button">표에 직접 적기·붙여넣기</button></div>
+  <div id="gridBox" hidden>
   <div class="bgrid-wrap">
     <table class="bgrid" id="batchGrid">
       <thead><tr><th class="c-no">연번</th><th class="c-name">성명</th><th class="c-birth">생년월일</th><th class="c-dept">소속</th><th class="c-rank">직급</th><th class="c-addr">주소<em>필수</em></th><th class="c-del"></th></tr></thead>
@@ -399,6 +420,7 @@ body.chatting .top{border-bottom-color:var(--line)}
     <button class="b-link" id="batchAddRow" type="button">+ 줄 추가</button>
     <button class="b-link" id="batchClearGrid" type="button">표 비우기</button>
     <span>명단은 이 화면에만 있고 저장되지 않습니다. 조회에는 주소만 쓰입니다.</span>
+  </div>
   </div>
   <div class="batch-bar">
     <button class="btn primary" id="batchRun" type="button">조회 시작</button>
@@ -1307,6 +1329,8 @@ function resetAll() {
   results.clear();
   batch.rows = [];
   resetGrid();
+  $("batchFileInfo").hidden = true;
+  showGrid(false);
   $("batchErr").hidden = true;
   renderBatch();
   $("thread").innerHTML = "";
@@ -1317,7 +1341,7 @@ function resetAll() {
   setChatting(false);
   showExpired();
   window.scrollTo({ top: 0 });
-  ($("batchMain").hidden ? $("q") : $("batchBody").querySelector("input")).focus();
+  if ($("batchMain").hidden) $("q").focus();
 }
 
 // 사용 기한이 지난 배포본은 입력을 막고 안내만 보여 준다.
@@ -1470,15 +1494,17 @@ const GRID_HEAD = {
   no: ["연번", "번호", "순번", "no"],
   name: ["성명", "이름"],
   birth: ["생년월일", "생일", "출생일"],
-  dept: ["소속", "부서", "소속부서", "근무부서"],
+  dept: ["소속", "부서", "소속부서", "근무부서", "현소속", "근무처"],
   rank: ["직급", "계급", "직위"],
-  addr: ["주소", "주거지", "거주지", "주소지", "현주소", "도로명주소"],
+  addr: ["주소", "주거지", "거주지", "주소지", "현주소", "도로명주소", "주거지주소", "거주지주소", "실거주지", "실거주지주소", "자택주소", "집주소"],
 };
 const headKey = (cell) => {
   const t = cell.replace(/\(.*?\)|\s/g, "").replace(/\.$/, "").toLowerCase();
   return GRID_COLS.find((k) => GRID_HEAD[k].includes(t)) || null;
 };
 const cellText = (x) => x.value.trim().replace(/\s+/g, " ");
+// 같은 뜻의 열이 둘 이상이면 앞의 것만 쓴다 (예: '연번'과 '번호')
+const uniqueCols = (cols) => cols.map((k, i) => (k && cols.indexOf(k) === i ? k : null));
 
 function gridRowHtml(first) {
   const hint = { birth: "1990-03-15", addr: "예: 수원시 장안구 창룡대로 223" };
@@ -1531,7 +1557,7 @@ function pasteGrid(input, text) {
   let rows = parseClip(text);
   if (!rows.length) return;
   let cols;
-  const head = rows[0].map(headKey);
+  const head = uniqueCols(rows[0].map(headKey));
   if (head.filter(Boolean).length >= 2) { cols = head; rows = rows.slice(1); }
   else {
     const start = GRID_COLS.indexOf(input.dataset.k);
@@ -1539,18 +1565,180 @@ function pasteGrid(input, text) {
     // '연번·주소' 두 열만 첫 칸에 붙여넣으면 주소 칸으로 보낸다
     cols = start === 0 && width === 2 ? ["no", "addr"] : Array.from({ length: width }, (_, i) => GRID_COLS[start + i] || null);
   }
+  fillGrid(input.closest("tr"), rows.map((cells) => Object.fromEntries(cols.map((k, i) => [k, cells[i] || ""]).filter(([k]) => k))));
+  $("batchErr").hidden = true;
+}
+
+// tr부터 아래로 한 사람씩 채운다. 넘치면 줄을 늘린다.
+function fillGrid(tr, people) {
   const body = $("batchBody");
-  let tr = input.closest("tr");
-  for (const cells of rows) {
+  for (const g of people) {
     if (!tr) { addGridRows(1); tr = body.rows[body.rows.length - 1]; }
-    cols.forEach((k, i) => { if (k) tr.querySelector(`[data-k="${k}"]`).value = cells[i] || ""; });
+    for (const k of GRID_COLS) if (k in g) tr.querySelector(`[data-k="${k}"]`).value = g[k];
     const b = tr.querySelector('[data-k="birth"]');
     if (b.value) fixBirth(b); else b.classList.remove("invalid");
     syncRow(tr);
     tr = tr.nextElementSibling;
   }
   keepSpareRow();
-  $("batchErr").hidden = true;
+}
+
+/* 명단 파일 읽기: 엑셀(.xlsx)은 압축을 풀어 표를 읽고, CSV·텍스트는 글자 인코딩을 맞춰 읽는다. 파일은 기기 밖으로 나가지 않는다. */
+async function readListFile(file) {
+  const buf = await file.arrayBuffer();
+  const u8 = new Uint8Array(buf);
+  if (u8[0] === 0x50 && u8[1] === 0x4b) return xlsxTables(buf);
+  if (u8[0] === 0xd0 && u8[1] === 0xcf) throw new Error("예전 엑셀 형식(.xls)이나 암호가 걸린 파일은 읽지 못합니다. 엑셀에서 '다른 이름으로 저장 → Excel 통합 문서(.xlsx)'로 저장해 올리거나, 명단을 복사해 표에 붙여넣어 주세요.");
+  if (/\.(xlsx?|cell|hwp|hwpx)$/i.test(file.name)) throw new Error("파일을 읽지 못했습니다. 문서 보안(DRM)이 걸린 파일일 수 있습니다. 엑셀에서 명단을 복사해 표에 붙여넣어 주세요.");
+  return [parseDelimited(decodeText(u8))];
+}
+
+function decodeText(u8) {
+  if (u8[0] === 0xef && u8[1] === 0xbb && u8[2] === 0xbf) return new TextDecoder().decode(u8.subarray(3));
+  if (u8[0] === 0xff && u8[1] === 0xfe) return new TextDecoder("utf-16le").decode(u8.subarray(2)); // 엑셀 '유니코드 텍스트'
+  try { return new TextDecoder("utf-8", { fatal: true }).decode(u8); }
+  catch (e) { return new TextDecoder("euc-kr").decode(u8); } // 한글 엑셀이 저장한 CSV
+}
+
+// 쉼표 또는 탭으로 나뉜 표. 따옴표 안의 쉼표·줄바꿈은 칸 안의 글자로 본다.
+function parseDelimited(text) {
+  const head = text.split("\n", 5).join("\n");
+  const delim = (head.match(/\t/g) || []).length >= (head.match(/,/g) || []).length && head.includes("\t") ? "\t" : ",";
+  const rows = [];
+  let row = [], cell = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) {
+      if (ch !== '"') cell += ch;
+      else if (text[i + 1] === '"') { cell += '"'; i++; }
+      else q = false;
+    } else if (ch === '"' && !cell.trim()) { q = true; cell = ""; }
+    else if (ch === delim) { row.push(cell); cell = ""; }
+    else if (ch === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; }
+    else if (ch !== "\r") cell += ch;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+
+// .xlsx = zip 안의 XML. 보이는 시트를 순서대로 돌려준다. 숫자 칸은 숫자로 둔다 (날짜 일련번호 처리용).
+async function xlsxTables(buf) {
+  if (typeof DecompressionStream !== "function") throw new Error("이 브라우저에서는 엑셀 파일을 읽지 못합니다. 크롬·엣지 최신 버전을 쓰거나, 명단을 복사해 표에 붙여넣어 주세요.");
+  const files = await unzip(buf, (n) => /^xl\/(workbook\.xml|_rels\/workbook\.xml\.rels|sharedstrings\.xml|worksheets\/[^/]+\.xml)$/.test(n));
+  const xml = (name) => files.has(name) ? new DOMParser().parseFromString(new TextDecoder().decode(files.get(name)), "application/xml") : null;
+  const all = (node, tag) => [...node.getElementsByTagNameNS("*", tag)];
+  const wb = xml("xl/workbook.xml");
+  if (!wb) throw new Error("엑셀 파일 안에서 시트를 찾지 못했습니다.");
+  const pr = all(wb, "workbookPr")[0];
+  const date1904 = !!pr && /^(1|true)$/.test(pr.getAttribute("date1904") || "");
+  const rels = xml("xl/_rels/workbook.xml.rels");
+  const target = new Map(rels ? all(rels, "Relationship").map((r) => [r.getAttribute("Id"), r.getAttribute("Target")]) : []);
+  const sst = xml("xl/sharedstrings.xml");
+  const strings = sst ? all(sst, "si").map((si) => all(si, "t").filter((t) => t.parentNode.localName !== "rPh").map((t) => t.textContent).join("")) : [];
+  const tables = [];
+  for (const sh of all(wb, "sheet")) {
+    if ((sh.getAttribute("state") || "visible") !== "visible") continue;
+    const rid = [...sh.attributes].find((a) => a.localName === "id" && a.name !== "sheetId");
+    let t = target.get(rid && rid.value) || "";
+    t = (t.startsWith("/") ? t.slice(1) : "xl/" + t).replace(/[^/]+\/\.\.\//g, "").toLowerCase();
+    const doc = xml(t);
+    if (!doc) continue;
+    const rows = [];
+    for (const r of all(doc, "row")) {
+      const cells = [];
+      let col = 0;
+      for (const c of all(r, "c")) {
+        const ref = c.getAttribute("r");
+        if (ref) col = [...ref.replace(/\d+$/, "").toUpperCase()].reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0) - 1;
+        const type = c.getAttribute("t"), v = all(c, "v")[0];
+        let val = "";
+        if (type === "s") val = strings[+(v && v.textContent)] || "";
+        else if (type === "inlineStr") val = all(c, "t").map((x) => x.textContent).join("");
+        else if (v) val = type === "str" || type === "e" || isNaN(+v.textContent) ? v.textContent : +v.textContent;
+        cells[col++] = val;
+      }
+      rows[(+r.getAttribute("r") || rows.length + 1) - 1] = Array.from(cells, (x) => (x === undefined ? "" : x));
+    }
+    tables.push(Array.from(rows, (x) => x || []).map((cells) => cells.map((x) => (typeof x === "number" ? Object.assign(new Number(x), { date1904 }) : x))));
+  }
+  return tables;
+}
+
+async function unzip(buf, want) {
+  const dv = new DataView(buf), u8 = new Uint8Array(buf);
+  let end = -1;
+  for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { end = i; break; }
+  if (end < 0) throw new Error("엑셀 파일을 읽지 못했습니다. 파일이 손상되었거나 문서 보안이 걸려 있을 수 있습니다.");
+  const out = new Map();
+  let p = dv.getUint32(end + 16, true);
+  for (let i = dv.getUint16(end + 10, true); i > 0 && dv.getUint32(p, true) === 0x02014b50; i--) {
+    const method = dv.getUint16(p + 10, true), size = dv.getUint32(p + 20, true), off = dv.getUint32(p + 42, true);
+    const nlen = dv.getUint16(p + 28, true);
+    const name = new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nlen)).toLowerCase();
+    p += 46 + nlen + dv.getUint16(p + 30, true) + dv.getUint16(p + 32, true);
+    if (!want(name)) continue;
+    const start = off + 30 + dv.getUint16(off + 26, true) + dv.getUint16(off + 28, true);
+    const data = u8.subarray(start, start + size);
+    if (method === 0) out.set(name, data);
+    else if (method === 8) out.set(name, new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer()));
+  }
+  return out;
+}
+
+// 엑셀 날짜 일련번호 -> YYYY-MM-DD
+function serialDate(n, date1904) {
+  const d = new Date(Date.UTC(1899, 11, 30) + (Math.floor(n) + (date1904 ? 1462 : 0)) * 864e5);
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+}
+
+// 표 위쪽(15줄 안)에서 '주소' 제목이 있는 줄을 찾아 그 아래를 명단으로 읽는다. 주소·성명이 모두 빈 줄은 건너뛴다.
+function pickTable(rows) {
+  for (let h = 0; h < Math.min(rows.length, 15); h++) {
+    const cols = uniqueCols(rows[h].map((c) => headKey(String(c))));
+    if (!cols.includes("addr")) continue;
+    const people = rows.slice(h + 1).map((cells) => {
+      const g = {};
+      cols.forEach((k, i) => {
+        if (!k) return;
+        const v = cells[i];
+        g[k] = k === "birth" && v instanceof Number && v > 0 && v < 100000 ? serialDate(+v, v.date1904) : String(v == null ? "" : v).trim().replace(/\s+/g, " ");
+      });
+      return g;
+    }).filter((g) => g.addr || g.name);
+    return { cols: cols.filter(Boolean), people };
+  }
+  return null;
+}
+
+async function loadListFile(file) {
+  const err = (msg) => { $("batchErr").textContent = msg; $("batchErr").hidden = !msg; };
+  if (!file) return;
+  if (batch.running) return alert("조회가 끝난 뒤에 새 명단을 불러와 주세요.");
+  if (batch.rows.length && !confirm("새 명단을 불러오면 지금 조회 결과는 지워집니다. 불러올까요?")) return;
+  let found = null;
+  try {
+    for (const rows of await readListFile(file)) if ((found = pickTable(rows))) break;
+  } catch (e) {
+    return err(`${file.name}: ${e.message}`);
+  }
+  if (!found) return err(`${file.name}: 위쪽에서 '주소' 제목 칸을 찾지 못했습니다. 명단 맨 위 제목 줄에 '주소'(또는 주거지·거주지)가 있는지 확인해 주세요.`);
+  if (!found.people.length) return err(`${file.name}: 제목 줄 아래에 명단이 없습니다.`);
+  err("");
+  for (const row of batch.rows) if (row.rid != null) results.delete(row.rid);
+  batch.rows = [];
+  renderBatch();
+  $("batchBody").innerHTML = "";
+  addGridRows(1);
+  fillGrid($("batchBody").rows[0], found.people);
+  $("batchFileInfo").innerHTML = `<b>${esc(file.name)}</b><span>${found.people.length}명 · 읽은 열: ${found.cols.map((k) => GRID_TITLE[k]).join("·")}</span>`;
+  $("batchFileInfo").hidden = false;
+  showGrid(false);
+  startBatch();
+}
+
+function showGrid(open) {
+  $("gridBox").hidden = !open;
+  $("gridToggle").textContent = open ? "표 접기" : $("batchFileInfo").hidden ? "표에 직접 적기·붙여넣기" : "불러온 명단 보기·고치기";
 }
 
 // 조회한 뒤 표에서 인적사항을 고치면 결과지에 바로 반영한다. (주소를 고친 줄은 다시 조회해야 한다)
@@ -1638,20 +1826,28 @@ async function judgeRow(row, home, note) {
   renderBatch();
 }
 
+// 명단 주소에 붙은 동·호수·참고항목은 떼고 찾는다.
+// 도로명주소는 건물번호까지만 ("○○로 269, 101동 1203호 (매탄동)" → "○○로 269"), 그 밖에는 "101동"·"1203호"만 뺀다.
+function batchQuery(addr) {
+  const m = addr.match(/([가-힣A-Za-z0-9.]+(?:로|길))\s?(\d+(?:-\d+)?)/);
+  if (m) return addr.slice(0, m.index + m[0].length).trim();
+  return addr.replace(new RegExp(UNIT_RE.source, "g"), "$1").replace(/[\s,]+$/, "").replace(/\s+/g, " ").trim();
+}
+
 async function processRow(row) {
   row.status = "run"; row.msg = ""; row.rid = null; row.cands = []; renderBatch();
-  if (row.addr.length < 2) { row.status = "fail"; row.msg = "주소를 입력해 주세요."; return renderBatch(); }
-  if (UNIT_RE.test(row.addr)) { row.status = "fail"; row.msg = "동·호수는 빼고 아파트·빌라 단지까지만 적어 주세요."; return renderBatch(); }
+  const q = batchQuery(row.addr);
+  if (q.length < 2) { row.status = "fail"; row.msg = "주소를 입력해 주세요."; return renderBatch(); }
   let list;
   try {
-    list = await placeSearch(row.addr);
+    list = await placeSearch(q);
   } catch (e) {
-    if (isRoadLike(row.addr)) return judgeRow(row, textToHome(row.addr), `주소 검색 실패 (${e.message})`);
+    if (isRoadLike(q)) return judgeRow(row, textToHome(q), `주소 검색 실패 (${e.message})`);
     row.status = "fail"; row.msg = `주소 검색에 실패했습니다. (${e.message}) 도로명주소로 고쳐 다시 조회해 보세요.`;
     return renderBatch();
   }
   if (!list.length) { row.status = "fail"; row.msg = "주소를 찾지 못했습니다. 도로명주소나 단지 이름을 확인해 주세요."; return renderBatch(); }
-  const exact = exactMatches(row.addr, list);
+  const exact = exactMatches(q, list);
   if (exact.length === 1) return judgeRow(row, placeToHome(exact[0]), "");
   row.cands = exact.concat(list.filter((p) => !exact.includes(p)));
   row.status = "pick";
@@ -1674,8 +1870,8 @@ function startBatch() {
   const err = (msg) => { $("batchErr").textContent = msg; $("batchErr").hidden = !msg; };
   if (isExpired()) return err(`사용 기한(${expiryText})이 지난 파일입니다. 최신 파일을 받아 주세요.`);
   const { rows, bad } = readGrid();
-  if (!rows.length) return err("표에 한 줄에 한 명씩 주소를 적거나, 엑셀 명단을 붙여넣어 주세요.");
-  if (bad) { bad.classList.add("invalid"); bad.focus(); return err("생년월일은 YYYY-MM-DD 형식으로 적어 주세요. (예: 1990-03-15)"); }
+  if (!rows.length) return err("명단 파일을 끌어다 놓거나, 표에 한 줄에 한 명씩 주소를 적어 주세요.");
+  if (bad) { showGrid(true); bad.classList.add("invalid"); bad.focus(); return err("생년월일은 YYYY-MM-DD 형식으로 적어 주세요. (예: 1990-03-15)"); }
   err("");
   if (!keysUnlocked) return openLock(startBatch);
   // 이미 조회한 줄은 주소가 그대로면 결과를 두고 인적사항만 새로 받는다. 새 줄·주소를 고친 줄만 조회한다.
@@ -1698,7 +1894,7 @@ function printBatch() {
   const done = batch.rows.filter((r) => r.status === "done");
   if (!done.length) return;
   const badBirth = $("batchBody").querySelector('[data-k="birth"].invalid');
-  if (badBirth) { badBirth.focus(); return alert("생년월일 형식이 맞지 않는 칸이 있습니다. YYYY-MM-DD로 고쳐 주세요."); }
+  if (badBirth) { showGrid(true); badBirth.focus(); return alert("생년월일 형식이 맞지 않는 칸이 있습니다. YYYY-MM-DD로 고쳐 주세요."); }
   const moved = batch.rows.filter(addrChanged).length;
   if (moved) return alert(`표에서 주소를 고친 줄이 ${moved}개 있습니다. '조회 시작'을 누르면 고친 줄만 다시 조회합니다.`);
   const rest = readGrid().rows.length - done.length;
@@ -1714,7 +1910,7 @@ function setView(view) {
   $("batchMain").hidden = !isBatch;
   document.body.classList.toggle("batching", isBatch);
   for (const b of $("viewSeg").querySelectorAll("button")) b.classList.toggle("on", b.dataset.view === view);
-  (isBatch ? $("batchBody").querySelector("input") : $("q")).focus();
+  if (!isBatch) $("q").focus();
 }
 
 $("viewSeg").addEventListener("click", (e) => { const b = e.target.closest("button[data-view]"); if (b) setView(b.dataset.view); });
@@ -1790,8 +1986,32 @@ $("batchClearGrid").addEventListener("click", () => {
   batch.rows = [];
   renderBatch();
   resetGrid();
+  $("batchFileInfo").hidden = true;
+  showGrid(true);
   $("batchErr").hidden = true;
   $("batchBody").querySelector("input").focus();
+});
+$("gridToggle").addEventListener("click", () => {
+  showGrid($("gridBox").hidden);
+  if (!$("gridBox").hidden) $("batchBody").querySelector("input").focus();
+});
+// 파일 고르기·끌어다 놓기 (일괄 조회 화면 어디에 놓아도 된다)
+$("batchFile").addEventListener("change", () => { const f = $("batchFile").files[0]; $("batchFile").value = ""; loadListFile(f); });
+const hasFiles = (e) => e.dataTransfer && [...e.dataTransfer.types].includes("Files");
+for (const type of ["dragenter", "dragover"]) {
+  window.addEventListener(type, (e) => {
+    if (!hasFiles(e) || $("batchMain").hidden) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    $("batchDrop").classList.add("over");
+  });
+}
+window.addEventListener("dragleave", (e) => { if (!e.relatedTarget) $("batchDrop").classList.remove("over"); });
+window.addEventListener("drop", (e) => {
+  if (!hasFiles(e)) return;
+  e.preventDefault(); // 브라우저가 파일을 열어 화면을 떠나지 않게
+  $("batchDrop").classList.remove("over");
+  if (!$("batchMain").hidden) loadListFile(e.dataTransfer.files[0]);
 });
 
 $("batchList").addEventListener("keydown", (e) => {
