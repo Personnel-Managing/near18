@@ -1,6 +1,6 @@
 {
-  "name": "우리집에서 가까운 경찰서 찾기",
-  "short_name": "가까운 경찰서",
+  "name": "NEAR 18 · 우리집에서 가까운 경찰서 찾기",
+  "short_name": "NEAR 18",
   "description": "카카오맵 거리우선 기준으로 18km 이내 경찰서를 찾아줍니다.",
   "lang": "ko",
   "start_url": "./",
