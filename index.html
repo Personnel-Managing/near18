@@ -6,6 +6,11 @@
 <meta name="theme-color" content="#faf5ee">
 <!-- 보안 정책: 스크립트·통신은 주소 검색(브이월드·카카오)과 길찾기(카카오모빌리티) 세 곳으로만 제한한다. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' https://api.vworld.kr; connect-src https://api.vworld.kr https://dapi.kakao.com https://apis-navi.kakaomobility.com; style-src 'unsafe-inline'; font-src data:; img-src data: 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<script>
+// 지도 기준: "kakao"(카카오맵 거리우선, 자동 조회) | "naver"(네이버지도 거리우선, 앱에서 확인해 입력). build.html이 정한다.
+const MAP_BRAND = "kakao";
+document.documentElement.classList.add("brand-" + MAP_BRAND);
+</script>
 <title>우리집에서 가까운 경찰서 찾기</title>
 <meta name="robots" content="noindex, nofollow">
 <!-- 웹에 게시했을 때 휴대폰 '홈 화면에 추가'로 앱처럼 쓰기 위한 설정 (파일로 열 때는 쓰이지 않는다) -->
@@ -14,17 +19,29 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="near18">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2032%2032%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M14.5%202.6%2025%206.4V14c0%206.6-4.4%2011.7-10.5%2014C8.4%2025.7%204%2020.6%204%2014V6.4z%22%20fill%3D%22%23b0532c%22%2F%3E%3Cpath%20d%3D%22M14.5%2020.4s-4.2-3.7-4.2-7a4.2%204.2%200%200%201%208.4%200c0%203.3-4.2%207-4.2%207z%22%20fill%3D%22%23ffffff%22%2F%3E%3Ccircle%20cx%3D%2214.5%22%20cy%3D%2213.3%22%20r%3D%221.6%22%20fill%3D%22%23b0532c%22%2F%3E%3Ccircle%20cx%3D%2223.6%22%20cy%3D%2223.6%22%20r%3D%227.6%22%20fill%3D%22%23e2a23a%22%20stroke%3D%22%23ffffff%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M22.897506925207757%2026.67700831024931H17.91634349030471V25.43684210526316H19.843213296398893V20.64016620498615H19.75096952908587L18.29556786703601%2022.546537396121884L17.31163434903047%2021.777839335180058L19.023268698060942%2019.522991689750697H21.380609418282546V25.43684210526316H22.897506925207757ZM23.358725761772853%2024.719390581717455Q23.358725761772853%2024.053185595567868%2023.732825484764543%2023.61246537396122Q24.106925207756234%2023.171745152354575%2024.762880886426593%2022.987257617728535V22.90526315789474Q24.209418282548476%2022.700277008310252%2023.89168975069252%2022.290304709141274Q23.573961218836565%2021.8803324099723%2023.573961218836565%2021.285872576177287Q23.573961218836565%2020.732409972299173%2023.860941828254848%2020.30706371191136Q24.14792243767313%2019.88171745152355%2024.701385041551248%2019.640858725761774Q25.254847645429365%2019.400000000000002%2026.02354570637119%2019.400000000000002Q26.79224376731302%2019.400000000000002%2027.345706371191135%2019.640858725761774Q27.89916897506925%2019.88171745152355%2028.186149584487534%2020.30706371191136Q28.473130193905817%2020.732409972299173%2028.473130193905817%2021.285872576177287Q28.473130193905817%2021.8803324099723%2028.15540166204986%2022.290304709141274Q27.837673130193906%2022.700277008310252%2027.28421052631579%2022.90526315789474V22.987257617728535Q27.94016620498615%2023.171745152354575%2028.31426592797784%2023.61246537396122Q28.68836565096953%2024.053185595567868%2028.68836565096953%2024.719390581717455Q28.68836565096953%2025.324099722991694%2028.370637119113574%2025.795567867036013Q28.05290858725762%2026.267036011080336%2027.45332409972299%2026.533518005540166Q26.853739612188367%2026.8%2026.02354570637119%2026.8Q25.193351800554016%2026.8%2024.59376731301939%2026.533518005540166Q23.994182825484764%2026.267036011080336%2023.676454293628808%2025.795567867036013Q23.358725761772853%2025.324099722991694%2023.358725761772853%2024.719390581717455ZM27.02797783933518%2021.603601108033242V21.439612188365654Q27.02797783933518%2021.0398891966759%2026.76662049861496%2020.809279778393353Q26.50526315789474%2020.578670360110806%2026.02354570637119%2020.578670360110806Q25.541828254847644%2020.578670360110806%2025.280470914127424%2020.809279778393353Q25.019113573407203%2021.0398891966759%2025.019113573407203%2021.439612188365654V21.603601108033242Q25.019113573407203%2022.003324099722995%2025.280470914127424%2022.233933518005543Q25.541828254847644%2022.46454293628809%2026.02354570637119%2022.46454293628809Q26.50526315789474%2022.46454293628809%2026.76662049861496%2022.233933518005543Q27.02797783933518%2022.003324099722995%2027.02797783933518%2021.603601108033242ZM27.079224376731304%2024.709141274238227V24.504155124653742Q27.079224376731304%2024.073684210526316%2026.802493074792245%2023.832825484764545Q26.525761772853187%2023.591966759002773%2026.02354570637119%2023.591966759002773Q25.521329639889196%2023.591966759002773%2025.244598337950137%2023.832825484764545Q24.967867036011082%2024.073684210526316%2024.967867036011082%2024.504155124653742V24.709141274238227Q24.967867036011082%2025.139612188365653%2025.244598337950137%2025.380470914127425Q25.521329639889196%2025.621329639889197%2026.02354570637119%2025.621329639889197Q26.525761772853187%2025.621329639889197%2026.802493074792245%2025.380470914127425Q27.079224376731304%2025.139612188365653%2027.079224376731304%2024.709141274238227Z%22%20transform%3D%22translate%2823.6%2023.62%29%20scale%28.88%29%20translate%28-23%20-23.1%29%22%20fill%3D%22%234a2412%22%2F%3E%3C%2Fsvg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2032%2032%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M14.5%202.6%2025%206.4V14c0%206.6-4.4%2011.7-10.5%2014C8.4%2025.7%204%2020.6%204%2014V6.4z%22%20fill%3D%22%233C1E1E%22%2F%3E%3Cpath%20d%3D%22M14.5%2020.4s-4.2-3.7-4.2-7a4.2%204.2%200%200%201%208.4%200c0%203.3-4.2%207-4.2%207z%22%20fill%3D%22%23ffffff%22%2F%3E%3Ccircle%20cx%3D%2214.5%22%20cy%3D%2213.3%22%20r%3D%221.6%22%20fill%3D%22%233C1E1E%22%2F%3E%3Ccircle%20cx%3D%2223.6%22%20cy%3D%2223.6%22%20r%3D%227.6%22%20fill%3D%22%23FEE500%22%20stroke%3D%22%23ffffff%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M22.897506925207757%2026.67700831024931H17.91634349030471V25.43684210526316H19.843213296398893V20.64016620498615H19.75096952908587L18.29556786703601%2022.546537396121884L17.31163434903047%2021.777839335180058L19.023268698060942%2019.522991689750697H21.380609418282546V25.43684210526316H22.897506925207757ZM23.358725761772853%2024.719390581717455Q23.358725761772853%2024.053185595567868%2023.732825484764543%2023.61246537396122Q24.106925207756234%2023.171745152354575%2024.762880886426593%2022.987257617728535V22.90526315789474Q24.209418282548476%2022.700277008310252%2023.89168975069252%2022.290304709141274Q23.573961218836565%2021.8803324099723%2023.573961218836565%2021.285872576177287Q23.573961218836565%2020.732409972299173%2023.860941828254848%2020.30706371191136Q24.14792243767313%2019.88171745152355%2024.701385041551248%2019.640858725761774Q25.254847645429365%2019.400000000000002%2026.02354570637119%2019.400000000000002Q26.79224376731302%2019.400000000000002%2027.345706371191135%2019.640858725761774Q27.89916897506925%2019.88171745152355%2028.186149584487534%2020.30706371191136Q28.473130193905817%2020.732409972299173%2028.473130193905817%2021.285872576177287Q28.473130193905817%2021.8803324099723%2028.15540166204986%2022.290304709141274Q27.837673130193906%2022.700277008310252%2027.28421052631579%2022.90526315789474V22.987257617728535Q27.94016620498615%2023.171745152354575%2028.31426592797784%2023.61246537396122Q28.68836565096953%2024.053185595567868%2028.68836565096953%2024.719390581717455Q28.68836565096953%2025.324099722991694%2028.370637119113574%2025.795567867036013Q28.05290858725762%2026.267036011080336%2027.45332409972299%2026.533518005540166Q26.853739612188367%2026.8%2026.02354570637119%2026.8Q25.193351800554016%2026.8%2024.59376731301939%2026.533518005540166Q23.994182825484764%2026.267036011080336%2023.676454293628808%2025.795567867036013Q23.358725761772853%2025.324099722991694%2023.358725761772853%2024.719390581717455ZM27.02797783933518%2021.603601108033242V21.439612188365654Q27.02797783933518%2021.0398891966759%2026.76662049861496%2020.809279778393353Q26.50526315789474%2020.578670360110806%2026.02354570637119%2020.578670360110806Q25.541828254847644%2020.578670360110806%2025.280470914127424%2020.809279778393353Q25.019113573407203%2021.0398891966759%2025.019113573407203%2021.439612188365654V21.603601108033242Q25.019113573407203%2022.003324099722995%2025.280470914127424%2022.233933518005543Q25.541828254847644%2022.46454293628809%2026.02354570637119%2022.46454293628809Q26.50526315789474%2022.46454293628809%2026.76662049861496%2022.233933518005543Q27.02797783933518%2022.003324099722995%2027.02797783933518%2021.603601108033242ZM27.079224376731304%2024.709141274238227V24.504155124653742Q27.079224376731304%2024.073684210526316%2026.802493074792245%2023.832825484764545Q26.525761772853187%2023.591966759002773%2026.02354570637119%2023.591966759002773Q25.521329639889196%2023.591966759002773%2025.244598337950137%2023.832825484764545Q24.967867036011082%2024.073684210526316%2024.967867036011082%2024.504155124653742V24.709141274238227Q24.967867036011082%2025.139612188365653%2025.244598337950137%2025.380470914127425Q25.521329639889196%2025.621329639889197%2026.02354570637119%2025.621329639889197Q26.525761772853187%2025.621329639889197%2026.802493074792245%2025.380470914127425Q27.079224376731304%2025.139612188365653%2027.079224376731304%2024.709141274238227Z%22%20transform%3D%22translate(23.6%2023.62)%20scale(.88)%20translate(-23%20-23.1)%22%20fill%3D%22%233C1E1E%22%2F%3E%3C%2Fsvg%3E">
 <style>
 :root{
-  --bg:#faf5ee;--surface:#fffdf9;--ink:#2c2420;--ink2:#6c5d55;--ink3:#a5978d;--line:#ede3d6;--line2:#dfd1bf;
-  --primary:#b0532c;--primary-hover:#924320;--primary-soft:#f6e6da;--ring:rgba(176,83,44,.14);
-  --in:#4f7f3a;--in-soft:#ebf3e2;--over:#cfc4b8;--track:#f2eadf;--limit:#d4475b;
+  /* 카카오맵 기준 (기본): 카카오 노랑 + 갈색 */
+  --bg:#f8f8f6;--surface:#ffffff;--ink:#191919;--ink2:#5c5c5c;--ink3:#9a9a9a;--line:#ececec;--line2:#dcdcdc;
+  --primary:#fee500;--primary-hover:#f2d900;--on-primary:#191919;--primary-soft:#fff8c7;--accent:#3c1e1e;--focus:#d9bf00;--ring:rgba(254,229,0,.4);
+  --logo:#3c1e1e;--logo-badge:#fee500;--logo-num:#3c1e1e;--hero-dot:rgba(60,30,30,.07);
+  --in:#2f7d32;--in-soft:#e8f4e8;--over:#cfcfcf;--track:#f0f0ee;--limit:#d4475b;
   --warn:#8f5d00;--warn-soft:#fff3d9;--bad:#b3261e;--bad-soft:#fbeaea;
-  --radius:20px;--shadow:0 1px 2px rgba(44,36,32,.05),0 8px 28px rgba(44,36,32,.07);
+  --radius:20px;--shadow:0 1px 2px rgba(0,0,0,.05),0 8px 28px rgba(0,0,0,.07);
 }
-/* 일괄 조회 화면은 남색으로 구분한다 (개별 조회는 테라코타 그대로) */
-body.batching{--primary:#2e4a75;--primary-hover:#233a5c;--primary-soft:#e3e9f2;--ring:rgba(46,74,117,.16)}
+/* 네이버지도 기준: 네이버 초록 */
+html.brand-naver{
+  --bg:#f5f8f6;--surface:#ffffff;--ink:#1e1e1e;--ink2:#5a5f5c;--ink3:#9aa09c;--line:#e6ebe8;--line2:#d4dbd7;
+  --primary:#03c75a;--primary-hover:#02b350;--on-primary:#ffffff;--primary-soft:#e5f8ec;--accent:#00873c;--focus:#03c75a;--ring:rgba(3,199,90,.2);
+  --logo:#03c75a;--logo-badge:#1e1e1e;--logo-num:#ffffff;--hero-dot:rgba(3,199,90,.09);
+  --in:#00873c;--in-soft:#e5f8ec;--track:#edf2ef;
+}
+/* 담당자용 로고: 앱 아이콘과 같은 색 */
+html.brand-kakao .hr-app{--logo:#f5cf00;--logo-badge:#3c1e1e;--logo-num:#fee500}
+html.brand-naver .hr-app{--logo:#1e1e1e;--logo-badge:#03c75a;--logo-num:#ffffff}
+/* 일괄 조회 화면은 남색으로 구분한다 */
+body.batching{--primary:#2e4a75;--primary-hover:#233a5c;--on-primary:#ffffff;--primary-soft:#e3e9f2;--accent:#2e4a75;--focus:#2e4a75;--ring:rgba(46,74,117,.16)}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{margin:0}
@@ -36,14 +53,13 @@ a{color:inherit}
 svg{display:block}
 
 /* 상단 */
-.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;background:rgba(250,245,238,.88);backdrop-filter:blur(8px);border-bottom:1px solid transparent}
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;background:var(--bg);background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid transparent}
 body.chatting .top{border-bottom-color:var(--line)}
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;letter-spacing:-.2px}
-.logo{width:34px;height:34px;color:var(--primary)}
-/* 담당자용은 앱 아이콘과 같은 색: 머스터드 방패에 테라코타 18 (화면 색과 상관없이) */
-.hr-app .logo{color:#e2a23a}
-.hr-app .logo .lg-badge{fill:#b0532c}
-.hr-app .logo .lg-num{fill:#fffaf2}
+.logo{width:34px;height:34px;color:var(--logo)}
+.logo .lg-hole{fill:var(--bg)}
+.logo .lg-badge{fill:var(--logo-badge);stroke:var(--bg)}
+.logo .lg-num{fill:var(--logo-num)}
 .top-right{display:flex;align-items:center;gap:8px}
 .chip{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--ink2);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 10px}
 .chip .dot{width:7px;height:7px;border-radius:50%;background:var(--in)}
@@ -57,9 +73,9 @@ body.chatting .top{border-bottom-color:var(--line)}
 .main.empty{min-height:calc(100vh - 56px);min-height:calc(100dvh - 56px);overflow:hidden;display:flex;flex-direction:column;justify-content:center;padding-bottom:12vh}
 .hero{text-align:center;position:relative;padding:8px 0 26px}
 .hero::before{content:"";position:absolute;left:50%;top:50%;width:520px;height:520px;transform:translate(-50%,-56%);z-index:-1;pointer-events:none;
-  background:repeating-radial-gradient(circle,rgba(176,83,44,.08) 0 1px,transparent 1px 44px);
+  background:repeating-radial-gradient(circle,var(--hero-dot) 0 1px,transparent 1px 44px);
   -webkit-mask-image:radial-gradient(circle,#000 30%,transparent 70%);mask-image:radial-gradient(circle,#000 30%,transparent 70%)}
-.eyebrow{display:inline-block;font-size:14.5px;font-weight:700;color:var(--primary);background:var(--primary-soft);border-radius:999px;padding:4px 12px;margin-bottom:16px}
+.eyebrow{display:inline-block;font-size:14.5px;font-weight:700;color:var(--accent);background:var(--primary-soft);border-radius:999px;padding:4px 12px;margin-bottom:16px}
 .hero h1{font-size:42px;line-height:1.25;margin:0 0 12px;letter-spacing:-.8px;font-weight:800}
 .hero p{margin:0 auto;max-width:600px;color:var(--ink2);font-size:18.5px}
 .hero b{color:var(--ink)}
@@ -68,13 +84,13 @@ body.chatting .top{border-bottom-color:var(--line)}
 
 /* 입력창 */
 .composer{padding:6px 0 18px}
-.main:not(.empty) .composer{position:sticky;bottom:0;z-index:10;padding-top:28px;background:linear-gradient(to bottom,rgba(250,245,238,0),var(--bg) 26px)}
+.main:not(.empty) .composer{position:sticky;bottom:0;z-index:10;padding-top:28px;background:linear-gradient(to bottom,transparent,var(--bg) 26px)}
 .composer-box{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line2);border-radius:26px;padding:8px 8px 8px 18px;box-shadow:var(--shadow);transition:border-color .15s,box-shadow .15s}
-.composer-box:focus-within{border-color:var(--primary);box-shadow:0 0 0 4px var(--ring),var(--shadow)}
+.composer-box:focus-within{border-color:var(--focus);box-shadow:0 0 0 4px var(--ring),var(--shadow)}
 .composer-box .pin{width:23px;height:23px;color:var(--ink3);flex:none}
 .composer-box input{flex:1;min-width:0;border:none;outline:none;background:transparent;font-size:20px;padding:11px 0}
 .composer-box input::placeholder{color:var(--ink3)}
-.send{flex:none;width:50px;height:50px;border-radius:50%;border:none;background:var(--primary);color:#fff;display:grid;place-items:center;cursor:pointer;transition:background .15s,opacity .15s}
+.send{flex:none;width:50px;height:50px;border-radius:50%;border:none;background:var(--primary);color:var(--on-primary);display:grid;place-items:center;cursor:pointer;transition:background .15s,opacity .15s}
 .send:hover{background:var(--primary-hover)}
 .send:disabled{opacity:.35;cursor:not-allowed}
 .send svg{width:22px;height:22px}
@@ -92,25 +108,25 @@ body.chatting .top{border-bottom-color:var(--line)}
 .msg.user{display:flex;justify-content:flex-end}
 .msg.user .bubble{max-width:80%;background:var(--primary-soft);color:var(--ink);border-radius:20px 20px 6px 20px;padding:10px 16px;font-weight:600}
 .msg.bot{display:flex;gap:12px;align-items:flex-start}
-.avatar{flex:none;width:36px;height:36px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center;margin-top:2px}
+.avatar{flex:none;width:36px;height:36px;border-radius:50%;background:var(--primary);color:var(--on-primary);display:grid;place-items:center;margin-top:2px}
 .avatar svg{width:19px;height:19px}
 .bot-body{flex:1;min-width:0}
 .bot-body > p{margin:6px 0}
 .muted{color:var(--ink2)}
 .choices{display:grid;gap:8px;margin-top:10px}
 .choice{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:11px 14px;cursor:pointer;transition:border-color .15s,background .15s}
-.choice:hover{border-color:var(--primary);background:#fffaf4}
+.choice:hover{border-color:var(--focus);background:var(--primary-soft)}
 .choice b{font-size:17.5px}
 .choice span{font-size:15px;color:var(--ink2)}
 .choices.done .choice{cursor:default;opacity:.45}
-.choices.done .choice.picked{opacity:1;border-color:var(--primary);background:var(--primary-soft)}
+.choices.done .choice.picked{opacity:1;border-color:var(--focus);background:var(--primary-soft)}
 
 /* 진행 */
 .steps{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:8px}
 .steps li{display:flex;align-items:center;gap:10px;color:var(--ink3);font-size:16.5px}
 .steps li::before{content:"";width:16px;height:16px;border-radius:50%;border:2px solid var(--line2);flex:none}
 .steps li.run{color:var(--ink)}
-.steps li.run::before{border-color:var(--primary);border-right-color:transparent;animation:spin .8s linear infinite}
+.steps li.run::before{border-color:var(--accent);border-right-color:transparent;animation:spin .8s linear infinite}
 .steps li.done{color:var(--ink2)}
 .steps li.done::before{border-color:var(--in);background:var(--in) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/12px no-repeat}
 .steps small{color:var(--ink3);font-variant-numeric:tabular-nums}
@@ -122,7 +138,7 @@ body.chatting .top{border-bottom-color:var(--line)}
 .r-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
 .r-title{font-size:23px;font-weight:800;letter-spacing:-.4px}
 .r-addr{font-size:15.5px;color:var(--ink2);display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:2px}
-.link-btn{border:none;background:none;padding:0;font-size:14.5px;font-weight:700;color:var(--primary);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.link-btn{border:none;background:none;padding:0;font-size:14.5px;font-weight:700;color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .r-count{flex:none;text-align:right;line-height:1.1}
 .r-count b{font-size:48px;font-weight:800;color:var(--in);letter-spacing:-1px;font-variant-numeric:tabular-nums}
 .r-count span{font-size:19px;font-weight:700;color:var(--in);margin-left:2px}
@@ -152,12 +168,14 @@ body.chatting .top{border-bottom-color:var(--line)}
 .bar-row.in .b-km b{color:var(--in)}
 .b-km small{font-size:13px;color:var(--ink3);margin-left:1px}
 .b-km .alt{display:block;font-size:12px;color:var(--ink3)}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:120;background:var(--ink);color:#fff;border-radius:999px;padding:10px 18px;font-size:15px;box-shadow:var(--shadow);max-width:calc(100% - 32px);text-align:center}
+.toast a{color:#fff;font-weight:700;margin-left:6px}
 .b-km .manual{display:block;font-size:12px;color:var(--warn);font-weight:700}
-.km-in{width:84px;font-size:17px;border:1px solid var(--line2);border-radius:9px;padding:5px 8px;text-align:right;font-weight:700;background:#fffdf7}
-.km-in:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--ring)}
+.km-in{width:84px;font-size:17px;border:1px solid var(--line2);border-radius:9px;padding:5px 8px;text-align:right;font-weight:700;background:#fff}
+.km-in:focus{outline:none;border-color:var(--focus);box-shadow:0 0 0 3px var(--ring)}
 .km-in.invalid{border-color:var(--bad);background:var(--bad-soft)}
 .b-map{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;color:var(--ink2);border:1px solid var(--line);background:var(--surface);transition:color .15s,border-color .15s}
-.b-map:hover{color:var(--primary);border-color:var(--primary)}
+.b-map:hover{color:var(--accent);border-color:var(--focus)}
 .b-map svg{width:19px;height:19px}
 .b-status{font-size:14.5px;font-weight:600;color:var(--ink3)}
 .b-status.in{color:var(--in)}
@@ -170,14 +188,14 @@ body.chatting .top{border-bottom-color:var(--line)}
 .r-actions .hint{font-size:14.5px;color:var(--ink2)}
 .btn{border:1px solid var(--line2);background:var(--surface);border-radius:999px;padding:12px 22px;font-size:16.5px;font-weight:700;cursor:pointer}
 .btn:hover{background:#fbf5ee}
-.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
 .btn.primary:hover{background:var(--primary-hover)}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 
 /* 화면 전환 (담당자용) */
 .seg{display:inline-flex;border:1px solid var(--line2);border-radius:999px;padding:3px;background:var(--surface)}
 .seg button{border:0;background:none;border-radius:999px;padding:5px 12px;font-size:14.5px;font-weight:700;color:var(--ink2);cursor:pointer}
-.seg button.on{background:var(--primary);color:#fff}
+.seg button.on{background:var(--primary);color:var(--on-primary)}
 
 /* 일괄 조회 */
 .batch{max-width:960px;margin:0 auto;padding:22px 20px 40px}
@@ -185,8 +203,8 @@ body.chatting .top{border-bottom-color:var(--line)}
 .batch-head p{margin:0 0 14px;color:var(--ink2);font-size:16px}
 .batch-head .eyebrow{margin-bottom:10px}
 .drop{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;border:2px dashed var(--line2);border-radius:18px;background:var(--surface);padding:26px 18px;cursor:pointer;transition:border-color .15s,background .15s}
-.drop:hover,.drop:focus-within,.drop.over{border-color:var(--primary);background:var(--primary-soft)}
-.drop svg{width:34px;height:34px;color:var(--primary)}
+.drop:hover,.drop:focus-within,.drop.over{border-color:var(--focus);background:var(--primary-soft)}
+.drop svg{width:34px;height:34px;color:var(--accent)}
 .drop b{font-size:17px}
 .drop span{font-size:14px;color:var(--ink2)}
 .drop input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
@@ -199,12 +217,12 @@ body.chatting .top{border-bottom-color:var(--line)}
 .bgrid-wrap{overflow-x:auto;border:1px solid var(--line2);border-radius:14px;background:var(--surface)}
 .bgrid{width:100%;min-width:760px;border-collapse:collapse;table-layout:fixed}
 .bgrid th{background:var(--track);color:var(--ink2);font-size:14px;font-weight:700;padding:8px 6px;text-align:left;border-bottom:1px solid var(--line2);white-space:nowrap}
-.bgrid th em{font-style:normal;color:var(--primary);font-size:12.5px;margin-left:3px}
+.bgrid th em{font-style:normal;color:var(--accent);font-size:12.5px;margin-left:3px}
 .bgrid td{padding:0;border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
 .bgrid tr > :last-child{border-right:0}
 .bgrid tbody tr:last-child td{border-bottom:0}
 .bgrid input{width:100%;border:0;background:none;font:inherit;font-size:16px;padding:9px 8px;color:var(--ink)}
-.bgrid input:focus{outline:2px solid var(--primary);outline-offset:-2px;background:#fff}
+.bgrid input:focus{outline:2px solid var(--focus);outline-offset:-2px;background:#fff}
 .bgrid input.invalid{background:var(--warn-soft);color:var(--warn)}
 .bgrid .c-no{width:56px}.bgrid .c-name{width:90px}.bgrid .c-birth{width:120px}.bgrid .c-dept{width:200px}.bgrid .c-rank{width:100px}.bgrid .c-del{width:34px}
 .bgrid .c-no input{text-align:center}
@@ -226,10 +244,10 @@ body.chatting .top{border-bottom-color:var(--line)}
 .b-sub b{color:var(--in)}
 .b-state{display:flex;align-items:center;gap:10px;justify-content:flex-end}
 .badge{display:inline-block;border-radius:999px;padding:4px 10px;font-size:13.5px;font-weight:700;white-space:nowrap;background:var(--track);color:var(--ink2)}
-.st-run .badge{background:var(--primary-soft);color:var(--primary)}
+.st-run .badge{background:var(--primary-soft);color:var(--accent)}
 .st-done .badge{background:var(--in-soft);color:var(--in)}
 .st-pick .badge,.st-input .badge,.st-fail .badge{background:var(--warn-soft);color:var(--warn)}
-.b-link{border:none;background:none;color:var(--primary);font-weight:700;cursor:pointer;padding:0;font-size:14px;text-decoration:underline;text-underline-offset:2px}
+.b-link{border:none;background:none;color:var(--accent);font-weight:700;cursor:pointer;padding:0;font-size:14px;text-decoration:underline;text-underline-offset:2px}
 .b-detail{margin:12px 0 2px 64px}
 .b-detail .result{box-shadow:none}
 .b-detail .r-actions,.b-detail .callout{display:none}
@@ -239,18 +257,18 @@ body.chatting .top{border-bottom-color:var(--line)}
 .b-edit .btn{padding:8px 14px;font-size:15px}
 
 /* 대상자 정보 창 */
-.modal{position:fixed;inset:0;z-index:60;background:rgba(44,36,32,.42);display:flex;overflow-y:auto;padding:20px}
+.modal{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.42);display:flex;overflow-y:auto;padding:20px}
 .sheet{margin:auto;width:100%;max-width:460px;background:var(--surface);border-radius:22px;box-shadow:0 24px 60px rgba(0,0,0,.25);padding:22px}
 .sheet h3{margin:0 0 4px;font-size:21px;letter-spacing:-.3px}
 .sheet .sub{margin:0 0 16px;font-size:15px;color:var(--ink2)}
 .field{margin-bottom:12px}
 .field label{display:block;font-size:15px;font-weight:700;color:var(--ink2);margin-bottom:5px}
 .field input{width:100%;border:1px solid var(--line2);border-radius:12px;padding:12px 14px;font-size:18px;background:#fff}
-.field input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--ring)}
+.field input:focus{outline:none;border-color:var(--focus);box-shadow:0 0 0 3px var(--ring)}
 .field input.invalid{border-color:var(--bad);background:var(--bad-soft)}
 .field .err{font-size:14.5px;color:var(--bad);font-weight:600;margin-top:4px}
 .remember{display:flex;gap:8px;align-items:center;font-size:15px;color:var(--ink2);cursor:pointer}
-.remember input{width:18px;height:18px;accent-color:var(--primary)}
+.remember input{width:18px;height:18px;accent-color:var(--accent)}
 .forget{margin-top:6px;text-align:center}
 .forget .link-btn{font-size:13px;color:var(--ink3)}
 .main:not(.empty) .forget{display:none}
@@ -279,7 +297,7 @@ body.chatting .top{border-bottom-color:var(--line)}
 .doc .hr-box{margin-top:16px;border:2px solid #6d4a17;background:#faf3e8;padding:10px 12px;font-weight:700;font-size:11pt;text-align:center}
 .doc .foot{margin-top:14px;font-size:8.5pt;color:#555;border-top:1px solid #ccc;padding-top:8px}
 .doc .foot p{margin:2px 0}
-.doc .foot::before{content:"※ 아래 안내는 인쇄되지 않습니다";display:block;margin-bottom:4px;font-weight:700;color:var(--primary)}
+.doc .foot::before{content:"※ 아래 안내는 인쇄되지 않습니다";display:block;margin-bottom:4px;font-weight:700;color:var(--accent)}
 .doc .note{margin:4px 0 0;font-size:8.5pt;color:#555}
 
 @page{size:A4;margin:0} /* 브라우저 머리글·바닥글(날짜·파일 경로)이 찍히지 않게 페이지 여백은 0, 여백은 결과지 안쪽에 둔다 */
@@ -366,7 +384,7 @@ body.chatting .top{border-bottom-color:var(--line)}
 <body>
 <header class="top" id="top">
   <div class="brand">
-    <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><path d="M14.5 2.6 25 6.4V14c0 6.6-4.4 11.7-10.5 14C8.4 25.7 4 20.6 4 14V6.4z" fill="currentColor"/><path d="M14.5 20.4s-4.2-3.7-4.2-7a4.2 4.2 0 0 1 8.4 0c0 3.3-4.2 7-4.2 7z" fill="#faf5ee"/><circle cx="14.5" cy="13.3" r="1.6" fill="currentColor"/><circle class="lg-badge" cx="23.6" cy="23.6" r="7.6" fill="#e2a23a" stroke="#faf5ee" stroke-width="1.5"/><path class="lg-num" d="M22.897506925207757 26.67700831024931H17.91634349030471V25.43684210526316H19.843213296398893V20.64016620498615H19.75096952908587L18.29556786703601 22.546537396121884L17.31163434903047 21.777839335180058L19.023268698060942 19.522991689750697H21.380609418282546V25.43684210526316H22.897506925207757ZM23.358725761772853 24.719390581717455Q23.358725761772853 24.053185595567868 23.732825484764543 23.61246537396122Q24.106925207756234 23.171745152354575 24.762880886426593 22.987257617728535V22.90526315789474Q24.209418282548476 22.700277008310252 23.89168975069252 22.290304709141274Q23.573961218836565 21.8803324099723 23.573961218836565 21.285872576177287Q23.573961218836565 20.732409972299173 23.860941828254848 20.30706371191136Q24.14792243767313 19.88171745152355 24.701385041551248 19.640858725761774Q25.254847645429365 19.400000000000002 26.02354570637119 19.400000000000002Q26.79224376731302 19.400000000000002 27.345706371191135 19.640858725761774Q27.89916897506925 19.88171745152355 28.186149584487534 20.30706371191136Q28.473130193905817 20.732409972299173 28.473130193905817 21.285872576177287Q28.473130193905817 21.8803324099723 28.15540166204986 22.290304709141274Q27.837673130193906 22.700277008310252 27.28421052631579 22.90526315789474V22.987257617728535Q27.94016620498615 23.171745152354575 28.31426592797784 23.61246537396122Q28.68836565096953 24.053185595567868 28.68836565096953 24.719390581717455Q28.68836565096953 25.324099722991694 28.370637119113574 25.795567867036013Q28.05290858725762 26.267036011080336 27.45332409972299 26.533518005540166Q26.853739612188367 26.8 26.02354570637119 26.8Q25.193351800554016 26.8 24.59376731301939 26.533518005540166Q23.994182825484764 26.267036011080336 23.676454293628808 25.795567867036013Q23.358725761772853 25.324099722991694 23.358725761772853 24.719390581717455ZM27.02797783933518 21.603601108033242V21.439612188365654Q27.02797783933518 21.0398891966759 26.76662049861496 20.809279778393353Q26.50526315789474 20.578670360110806 26.02354570637119 20.578670360110806Q25.541828254847644 20.578670360110806 25.280470914127424 20.809279778393353Q25.019113573407203 21.0398891966759 25.019113573407203 21.439612188365654V21.603601108033242Q25.019113573407203 22.003324099722995 25.280470914127424 22.233933518005543Q25.541828254847644 22.46454293628809 26.02354570637119 22.46454293628809Q26.50526315789474 22.46454293628809 26.76662049861496 22.233933518005543Q27.02797783933518 22.003324099722995 27.02797783933518 21.603601108033242ZM27.079224376731304 24.709141274238227V24.504155124653742Q27.079224376731304 24.073684210526316 26.802493074792245 23.832825484764545Q26.525761772853187 23.591966759002773 26.02354570637119 23.591966759002773Q25.521329639889196 23.591966759002773 25.244598337950137 23.832825484764545Q24.967867036011082 24.073684210526316 24.967867036011082 24.504155124653742V24.709141274238227Q24.967867036011082 25.139612188365653 25.244598337950137 25.380470914127425Q25.521329639889196 25.621329639889197 26.02354570637119 25.621329639889197Q26.525761772853187 25.621329639889197 26.802493074792245 25.380470914127425Q27.079224376731304 25.139612188365653 27.079224376731304 24.709141274238227Z" transform="translate(23.6 23.62) scale(.88) translate(-23 -23.1)" fill="#4a2412"/></svg>
+    <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><path d="M14.5 2.6 25 6.4V14c0 6.6-4.4 11.7-10.5 14C8.4 25.7 4 20.6 4 14V6.4z" fill="currentColor"/><path class="lg-hole" d="M14.5 20.4s-4.2-3.7-4.2-7a4.2 4.2 0 0 1 8.4 0c0 3.3-4.2 7-4.2 7z" fill="#faf5ee"/><circle cx="14.5" cy="13.3" r="1.6" fill="currentColor"/><circle class="lg-badge" cx="23.6" cy="23.6" r="7.6" fill="#e2a23a" stroke="#faf5ee" stroke-width="1.5"/><path class="lg-num" d="M22.897506925207757 26.67700831024931H17.91634349030471V25.43684210526316H19.843213296398893V20.64016620498615H19.75096952908587L18.29556786703601 22.546537396121884L17.31163434903047 21.777839335180058L19.023268698060942 19.522991689750697H21.380609418282546V25.43684210526316H22.897506925207757ZM23.358725761772853 24.719390581717455Q23.358725761772853 24.053185595567868 23.732825484764543 23.61246537396122Q24.106925207756234 23.171745152354575 24.762880886426593 22.987257617728535V22.90526315789474Q24.209418282548476 22.700277008310252 23.89168975069252 22.290304709141274Q23.573961218836565 21.8803324099723 23.573961218836565 21.285872576177287Q23.573961218836565 20.732409972299173 23.860941828254848 20.30706371191136Q24.14792243767313 19.88171745152355 24.701385041551248 19.640858725761774Q25.254847645429365 19.400000000000002 26.02354570637119 19.400000000000002Q26.79224376731302 19.400000000000002 27.345706371191135 19.640858725761774Q27.89916897506925 19.88171745152355 28.186149584487534 20.30706371191136Q28.473130193905817 20.732409972299173 28.473130193905817 21.285872576177287Q28.473130193905817 21.8803324099723 28.15540166204986 22.290304709141274Q27.837673130193906 22.700277008310252 27.28421052631579 22.90526315789474V22.987257617728535Q27.94016620498615 23.171745152354575 28.31426592797784 23.61246537396122Q28.68836565096953 24.053185595567868 28.68836565096953 24.719390581717455Q28.68836565096953 25.324099722991694 28.370637119113574 25.795567867036013Q28.05290858725762 26.267036011080336 27.45332409972299 26.533518005540166Q26.853739612188367 26.8 26.02354570637119 26.8Q25.193351800554016 26.8 24.59376731301939 26.533518005540166Q23.994182825484764 26.267036011080336 23.676454293628808 25.795567867036013Q23.358725761772853 25.324099722991694 23.358725761772853 24.719390581717455ZM27.02797783933518 21.603601108033242V21.439612188365654Q27.02797783933518 21.0398891966759 26.76662049861496 20.809279778393353Q26.50526315789474 20.578670360110806 26.02354570637119 20.578670360110806Q25.541828254847644 20.578670360110806 25.280470914127424 20.809279778393353Q25.019113573407203 21.0398891966759 25.019113573407203 21.439612188365654V21.603601108033242Q25.019113573407203 22.003324099722995 25.280470914127424 22.233933518005543Q25.541828254847644 22.46454293628809 26.02354570637119 22.46454293628809Q26.50526315789474 22.46454293628809 26.76662049861496 22.233933518005543Q27.02797783933518 22.003324099722995 27.02797783933518 21.603601108033242ZM27.079224376731304 24.709141274238227V24.504155124653742Q27.079224376731304 24.073684210526316 26.802493074792245 23.832825484764545Q26.525761772853187 23.591966759002773 26.02354570637119 23.591966759002773Q25.521329639889196 23.591966759002773 25.244598337950137 23.832825484764545Q24.967867036011082 24.073684210526316 24.967867036011082 24.504155124653742V24.709141274238227Q24.967867036011082 25.139612188365653 25.244598337950137 25.380470914127425Q25.521329639889196 25.621329639889197 26.02354570637119 25.621329639889197Q26.525761772853187 25.621329639889197 26.802493074792245 25.380470914127425Q27.079224376731304 25.139612188365653 27.079224376731304 24.709141274238227Z" transform="translate(23.6 23.62) scale(.88) translate(-23 -23.1)" fill="#4a2412"/></svg>
     <span class="t">우리집에서 가까운 경찰서 찾기</span>
   </div>
   <div class="top-right">
@@ -378,9 +396,9 @@ body.chatting .top{border-bottom-color:var(--line)}
 
 <main class="main empty" id="main">
   <section class="hero">
-    <div class="eyebrow">경기도남부경찰청</div>
+    <div class="eyebrow">경기도남부경찰청 · <span class="brand-map">카카오맵</span> 기준</div>
     <h1>우리집 주소를 입력하세요</h1>
-    <p><span class="ln">도로명주소를 입력하면 아파트·빌라 이름은 자동으로 찾아 주고,</span> <span class="ln">카카오맵 <b>거리우선</b> 기준으로 <b>18km 이내</b> 경찰서를 찾아줍니다.</span></p>
+    <p><span class="ln">도로명주소를 입력하면 아파트·빌라 이름은 자동으로 찾아 주고,</span> <span class="ln"><span class="brand-map">카카오맵</span> <b>거리우선</b> 기준으로 <b>18km 이내</b> 경찰서를 찾아줍니다.</span></p>
   </section>
 
   <div class="thread" id="thread" aria-live="polite"></div>
@@ -442,6 +460,8 @@ body.chatting .top{border-bottom-color:var(--line)}
   <div class="forget" id="forgetRowB" hidden><button class="link-btn" data-forget type="button">이 기기에서 잠금 기억 지우기</button></div>
 </main>
 
+<div class="toast" id="appMiss" hidden>네이버지도 앱이 열리지 않나요? <a href="#" target="_blank" rel="noopener">웹으로 열기</a></div>
+
 <div class="modal" id="personModal" hidden>
   <form class="sheet" id="personForm" autocomplete="off">
     <h3>결과지에 들어갈 대상자 정보</h3>
@@ -489,6 +509,10 @@ const LIMIT_KM = 18;
 // 도로거리는 직선거리보다 짧을 수 없으므로, 주소 좌표와 길찾기의 출발·도착 지점 차이를 감안해 1km 여유를 두고
 // 직선거리가 이 값을 넘는 경찰서(=18km를 넘는 것이 명백한 곳)만 조회하지 않는다.
 const PREFILTER_KM = LIMIT_KM + 1;
+// 지도 기준별 이름. 네이버 기준은 공개 API에 '거리우선'이 없어, 카카오로 후보를 추린 뒤 네이버지도 앱에서 확인한 거리를 입력받는다.
+const NAVER = MAP_BRAND === "naver";
+const MAP_NAME = NAVER ? "네이버지도" : "카카오맵";
+const NAVER_CHECK_KM = LIMIT_KM + 2; // 카카오 예상 거리가 이 안인 경찰서만 네이버로 확인한다
 
 // 주소 검색 키 — 둘 중 하나만 있어도 되고, 둘 다 있으면 한쪽이 안 될 때 다른 쪽으로 찾는다. 모두 비워 두면 수동 확인 모드로 동작한다.
 // 개발자 원본에서는 아래에 키를 그대로 넣어 시험한다. 배포본은 '배포본 만들기'(build.html)로 만들며,
@@ -593,7 +617,7 @@ async function openLockWith(aes) {
 // 비밀번호를 바꿔 새로 배포하면 잠금 정보(salt)가 달라져 예전 기억은 저절로 무시된다.
 // 직원용과 담당자용은 같은 주소 아래에 게시되어 저장 공간을 같이 쓰므로 따로 기억한다.
 const REMEMBER_DAYS = 90;
-const REMEMBER_ID = APP_MODE === "batch" ? "key-batch" : "key";
+const REMEMBER_ID = (NAVER ? "naver-" : "") + (APP_MODE === "batch" ? "key-batch" : "key");
 let remembered = false;
 
 function rememberStore(mode, fn) {
@@ -947,7 +971,10 @@ function newResult(home, note) {
     kmSrc: new Map(),     // 경찰서명 -> "auto"(자동 조회) | "manual"(직접 입력)
     routeFail: new Set(), // 자동 조회에 실패한 경찰서
     kmAlt: new Map(),     // 점검용(#compare): 경찰서명 -> { RECOMMEND, TIME }
+    est: new Map(),       // 네이버 기준: 경찰서명 -> 카카오 거리우선 (예상치, 판정에는 쓰지 않음)
+    skipped: 0,           // 네이버 기준: 카카오 예상 거리가 멀어 확인 대상에서 뺀 경찰서 수
     routedAt: null,
+    checkedAt: null,      // 네이버 기준: 마지막으로 거리를 입력한 시각
   };
 }
 
@@ -959,6 +986,22 @@ function kakaoMapLink(r, st) {
   if (to) return `https://map.kakao.com/link/to/${place(st.name, to)}`;
   return `https://map.kakao.com/link/search/${encodeURIComponent(st.name)}`;
 }
+
+// 네이버지도 자동차 길찾기. PC는 웹 지도(좌표는 웹 메르카토르), 휴대폰은 네이버지도 앱을 먼저 연다.
+const mercator = ([lng, lat]) => [lng * 20037508.34 / 180, Math.log(Math.tan(((90 + lat) * Math.PI) / 360)) * 20037508.34 / Math.PI];
+function naverWebLink(r, st) {
+  const to = r.located.get(st.name), from = r.home.xy;
+  const pt = (xy, name) => { const [x, y] = mercator(xy); return `${x.toFixed(4)},${y.toFixed(4)},${encodeURIComponent(name.replace(/[,/]/g, " "))},,ADDRESS_POI`; };
+  if (to && from) return `https://map.naver.com/p/directions/${pt(from, r.home.bldg || "주거지")}/${pt(to, st.name)}/-/car`;
+  return `https://map.naver.com/p/search/${encodeURIComponent(st.name)}`;
+}
+function naverAppLink(r, st) {
+  const to = r.located.get(st.name), from = r.home.xy;
+  if (!to || !from) return "";
+  const q = { slat: from[1], slng: from[0], sname: r.home.bldg || "주거지", dlat: to[1], dlng: to[0], dname: st.name, appname: /^https?:/.test(location.origin) ? location.origin : "near18" };
+  return `nmap://route/car?${Object.entries(q).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&")}`;
+}
+const isPhone = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 // 후보 경찰서의 거리우선 거리를 4곳씩 나눠 조회한다. 정책상 결과는 저장하지 않고 조회할 때마다 새로 받는다.
 // 첫 묶음이 모두 실패하면(키·접속 문제) 나머지는 부르지 않는다.
@@ -1014,6 +1057,12 @@ async function judge(r, onStep) {
     // 거리를 받은 경찰서는 가까운 순, 받지 못한 곳은 그 뒤에 직선거리 순으로 둔다.
     const key = (st) => (r.km.has(st.name) ? r.km.get(st.name) : 1000 + (r.dist.get(st.name) ?? 999));
     r.order.sort((a, b) => key(a) - key(b));
+    if (NAVER) {
+      r.est = r.km; r.km = new Map(); r.kmSrc = new Map();
+      const keep = r.order.filter((st) => !r.est.has(st.name) || r.est.get(st.name) <= NAVER_CHECK_KM);
+      r.skipped = r.order.length - keep.length;
+      r.order = keep;
+    }
   } else {
     r.mode = "manual";
     const same = STATIONS.filter((s) => s.city === r.home.city);
@@ -1059,11 +1108,13 @@ function stepsHtml(st) {
     const cnt = s.state === "run" && s.total ? ` <small>${s.n}/${s.total}</small>` : "";
     return `<li class="${s.state}">${label}${cnt}</li>`;
   };
-  return `<ul class="steps">${row("addr", "주소 확인")}${row("locate", "경찰서 위치 확인")}${row("route", "카카오 '거리우선' 거리 조회")}</ul>`;
+  return `<ul class="steps">${row("addr", "주소 확인")}${row("locate", "경찰서 위치 확인")}${row("route", NAVER ? "확인할 경찰서 추리기 (카카오 예상 거리)" : "카카오 '거리우선' 거리 조회")}</ul>`;
 }
 
 const cityText = (r, st) => (st.city === r.home.city ? "같은 시·군" : esc(st.city));
-const mapBtn = (r, st) => `<a class="b-map" href="${kakaoMapLink(r, st)}" target="_blank" rel="noopener" title="카카오맵 길찾기 (경로 옵션을 '거리우선'으로 바꿔 확인)" aria-label="${esc(st.name)} 카카오맵 길찾기">${ICON.map}</a>`;
+const mapBtn = (r, st) => NAVER
+  ? `<a class="b-map" href="${naverWebLink(r, st)}" data-app="${esc(naverAppLink(r, st))}" target="_blank" rel="noopener" title="네이버지도 길찾기 (경로 목록에서 '거리우선' 거리를 확인)" aria-label="${esc(st.name)} 네이버지도 길찾기">${ICON.map}</a>`
+  : `<a class="b-map" href="${kakaoMapLink(r, st)}" target="_blank" rel="noopener" title="카카오맵 길찾기 (경로 옵션을 '거리우선'으로 바꿔 확인)" aria-label="${esc(st.name)} 카카오맵 길찾기">${ICON.map}</a>`;
 
 // 제안 목록: 카카오맵 거리우선 18.0km 이내 경찰서만 보여 준다.
 function rowHtml(r, st, km) {
@@ -1072,7 +1123,7 @@ function rowHtml(r, st, km) {
   return `<li class="bar-row in">
     <div class="b-name"><b title="${esc(st.addr)}">${esc(st.name)}</b><small>${cityText(r, st)}</small></div>
     <div class="b-track"><span class="b-fill" style="width:${Math.min(100, (km / LIMIT_KM) * 100)}%"></span></div>
-    <div class="b-km"><b>${fmtKm(km)}</b><small>km</small>${r.kmSrc.get(st.name) === "manual" ? '<span class="manual">직접 입력</span>' : ""}${altHtml}</div>
+    <div class="b-km"><b>${fmtKm(km)}</b><small>km</small>${!NAVER && r.kmSrc.get(st.name) === "manual" ? '<span class="manual">직접 입력</span>' : ""}${altHtml}</div>
     ${mapBtn(r, st)}
   </li>`;
 }
@@ -1080,7 +1131,9 @@ function rowHtml(r, st, km) {
 // 거리를 자동으로 받지 못한 경찰서: 카카오맵에서 확인한 거리를 입력받는다.
 function inputRowHtml(r, st) {
   const km = r.km.has(st.name) ? r.km.get(st.name) : null;
-  const why = r.mode === "manual" ? cityText(r, st) : r.located.has(st.name) ? "자동 조회 실패" : "위치 미확인";
+  const why = r.mode === "manual" ? cityText(r, st)
+    : NAVER ? (r.est.has(st.name) ? `카카오 예상 ${fmtKm(r.est.get(st.name))}km` : r.located.has(st.name) ? "예상 거리 없음" : "위치 미확인")
+    : r.located.has(st.name) ? "자동 조회 실패" : "위치 미확인";
   const status = km == null ? "" : isIn(km) ? '<span class="b-status in">18km 이내</span>' : '<span class="b-status">18km 초과</span>';
   return `<li class="bar-row input-row">
     <div class="b-name"><b title="${esc(st.addr)}">${esc(st.name)}</b><small>${why}</small></div>
@@ -1095,7 +1148,11 @@ function resultHtml(r) {
   const todo = r.order.filter((st) => r.kmSrc.get(st.name) !== "auto");
 
   let alert = "";
-  if (r.mode === "manual") {
+  if (NAVER) {
+    alert = r.mode === "manual"
+      ? `${r.note ? `${esc(r.note)}<br>` : ""}주거지 위치를 확인하지 못했습니다. 지도 버튼으로 네이버지도 <b>'거리우선'</b> 거리를 확인해 입력해 주세요.`
+      : `네이버지도에서 아래 ${todo.length}곳의 <b>'거리우선'</b> 거리를 확인해 입력해 주세요. 지도 버튼을 누르면 네이버지도 길찾기가 열립니다. 회색 글씨는 카카오 예상 거리입니다.${r.skipped ? ` (카카오 예상 ${NAVER_CHECK_KM}km를 넘는 ${r.skipped}곳은 뺐습니다)` : ""}`;
+  } else if (r.mode === "manual") {
     alert = `${r.note ? `${esc(r.note)}<br>` : ""}주거지 위치를 확인하지 못했습니다. 지도 버튼으로 카카오맵 <b>'거리우선'</b> 거리를 확인해 입력해 주세요.`;
   } else if (todo.length) {
     alert = !KAKAO_REST_KEY
@@ -1118,10 +1175,10 @@ function resultHtml(r) {
       </div>
       <div class="r-count${countCls}"><b>${done.length ? inList.length : "–"}</b><span>곳</span><small>18km 이내</small></div>
     </div>
-    <p class="r-meta">카카오맵 거리우선 기준${r.routedAt ? ` · ${fmtDateTime(r.routedAt)} 조회` : ""}</p>
+    <p class="r-meta">${MAP_NAME} 거리우선 기준${NAVER ? (r.checkedAt ? ` · ${fmtDateTime(r.checkedAt)} 확인` : "") : r.routedAt ? ` · ${fmtDateTime(r.routedAt)} 조회` : ""}</p>
     ${list}
     ${inputs}
-    ${inList.length || todo.length ? `<p class="map-hint">${ICON.map}<span>지도 버튼은 카카오맵 '추천' 경로로 열립니다. 비교할 때는 경로 목록에서 <b>'거리우선'</b>을 고르세요.</span></p>` : ""}
+    ${inList.length || todo.length ? `<p class="map-hint">${ICON.map}<span>${NAVER ? "지도 버튼은 네이버지도 길찾기로 열립니다. 경로 목록에서 <b>'거리우선'</b> 거리를 확인해 입력하세요." : "지도 버튼은 카카오맵 '추천' 경로로 열립니다. 비교할 때는 경로 목록에서 <b>'거리우선'</b>을 고르세요."}</span></p>` : ""}
     <div class="callout">${ICON.info}<span>제안된 경찰서의 결원 여부는 인사담당자에게 문의하세요.</span></div>
     <div class="r-actions">
       ${!canPrint(r) ? `<span class="hint">${r.mode === "auto" ? "위 경찰서의 거리를 모두 입력하면 결과지를 만들 수 있습니다." : "거리를 입력하면 결과지를 만들 수 있습니다."}</span>` : ""}
@@ -1255,8 +1312,8 @@ function readPerson() {
 // 결과지 한 장. p.no(연번)가 있으면 담당자용 일괄 인쇄: 표에 적은 인적사항을 넣고, 비운 칸은 출력 후 적도록 빈칸으로 둔다.
 function docHtml(r, p) {
   const { inList } = stats(r);
-  const kmText = (x) => fmtKm(x.km) + (r.kmSrc.get(x.st.name) === "manual" ? "*" : "");
-  const anyManual = inList.some((x) => r.kmSrc.get(x.st.name) === "manual");
+  const kmText = (x) => fmtKm(x.km) + (!NAVER && r.kmSrc.get(x.st.name) === "manual" ? "*" : "");
+  const anyManual = !NAVER && inList.some((x) => r.kmSrc.get(x.st.name) === "manual");
   const inRows = inList.length
     ? `<table class="list"><thead><tr><th style="width:9%">순번</th><th style="width:24%">경찰서</th><th>청사 주소</th><th style="width:16%">거리(km)</th></tr></thead><tbody>${
         inList.map((x, i) => `<tr><td>${i + 1}</td><td>${esc(x.st.name)}</td><td class="l">${esc(x.st.addr)}</td><td>${kmText(x)}</td></tr>`).join("")
@@ -1271,17 +1328,18 @@ function docHtml(r, p) {
     <tr><th>소속</th><td>${esc(p.dept)}</td><th>직급</th><td>${esc(p.rank)}</td></tr>`;
   return `
     <h1>주거지 인근 경찰서 확인 결과</h1>
-    <div class="sub">확인 기준: 주거지에서 카카오맵 자동차 길찾기 '거리우선' 경로 거리 ${LIMIT_KM}.0km 이하</div>
+    <div class="sub">확인 기준: 주거지에서 ${MAP_NAME} 자동차 길찾기 '거리우선' 경로 거리 ${LIMIT_KM}.0km 이하</div>
     <h3>대상자</h3>
     <table class="kv">${who}
     <tr><th>주거지</th><td colspan="3">${esc(homeLabel(r.home))}</td></tr></table>
     <h3>18km 이내 경찰서 (${inList.length}곳)</h3>
     ${inRows}
     ${anyManual ? '<p class="note">* 담당자가 카카오맵에서 확인해 직접 입력한 값입니다.</p>' : ""}
+    ${NAVER && inList.length ? `<p class="note">거리는 네이버지도 자동차 길찾기 '거리우선'에서 확인해 입력한 값입니다${r.checkedAt ? ` (${fmtDateTime(r.checkedAt)} 확인)` : ""}.</p>` : ""}
     <div class="hr-box">제안된 경찰서의 결원 여부는 인사담당자에게 문의하세요.</div>
     <div class="foot">
       <p>· 대상: 경기도남부경찰청 산하 경찰서 (신설 예정 경찰서 제외)</p>
-      <p>· 거리는 카카오 자동차 길찾기 '거리우선' 경로 조회값${r.routedAt ? `(조회일시 ${fmtDateTime(r.routedAt)})` : ""}이며, 도로 사정 등에 따라 달라질 수 있습니다.</p>
+      <p>· ${NAVER ? `거리는 네이버지도 자동차 길찾기 '거리우선'에서 확인해 입력한 값이며` : `거리는 카카오 자동차 길찾기 '거리우선' 경로 조회값${r.routedAt ? `(조회일시 ${fmtDateTime(r.routedAt)})` : ""}이며`}, 도로 사정 등에 따라 달라질 수 있습니다.</p>
       <p>· 출력일시: ${fmtDateTime(new Date())} · 우리집에서 가까운 경찰서 찾기 ${APP_VERSION}</p>
     </div>`;
 }
@@ -1291,7 +1349,7 @@ let printTitle = ""; // 인쇄·PDF 저장 때 쓸 파일 이름
 
 function buildDoc(r, p) {
   $("doc").innerHTML = docHtml(r, p);
-  printTitle = `가까운경찰서_${p.name}_${ymd(new Date())}`;
+  printTitle = `가까운경찰서${NAVER ? "(네이버)" : ""}_${p.name}_${ymd(new Date())}`;
 }
 
 function openPreview() {
@@ -1377,10 +1435,11 @@ function setMode() {
     chip.title = "처음 조회할 때 파일과 함께 안내받은 비밀번호를 입력합니다.";
     return;
   }
-  if (KAKAO_REST_KEY) { $("modeText").textContent = "자동 조회"; chip.className = "chip"; }
+  if (KAKAO_REST_KEY) { $("modeText").textContent = NAVER ? "네이버 확인" : "자동 조회"; chip.className = "chip"; }
   else if (VWORLD_KEY) { $("modeText").textContent = "거리 직접 입력"; chip.className = "chip warn"; }
   else { $("modeText").textContent = "주소 검색 꺼짐"; chip.className = "chip off"; }
-  chip.title = KAKAO_REST_KEY ? "카카오 길찾기로 거리를 자동 조회합니다." : "카카오 키가 없어 카카오맵에서 확인한 거리를 직접 입력합니다.";
+  chip.title = NAVER ? "카카오로 확인할 경찰서를 추리고, 네이버지도 '거리우선' 거리는 직접 확인해 입력합니다."
+    : KAKAO_REST_KEY ? "카카오 길찾기로 거리를 자동 조회합니다." : "카카오 키가 없어 카카오맵에서 확인한 거리를 직접 입력합니다.";
 }
 
 $("composer").addEventListener("submit", async (e) => {
@@ -1459,7 +1518,7 @@ document.addEventListener("change", (e) => {
   const km = parseKm(input.value);
   if (Number.isNaN(km)) { input.classList.add("invalid"); return; }
   if (km == null) { r.km.delete(name); r.kmSrc.delete(name); }
-  else { r.km.set(name, km); r.kmSrc.set(name, "manual"); }
+  else { r.km.set(name, km); r.kmSrc.set(name, "manual"); r.checkedAt = new Date(); }
   renderResult(r);
   if (r.batchRow) batchRowChanged(r.batchRow);
 });
@@ -1784,7 +1843,8 @@ const addrChanged = (row) => row.tr.isConnected && cellText(row.tr.querySelector
 function batchSummaryHtml(row) {
   const r = row.rid != null ? results.get(row.rid) : null;
   if (!r || (row.status !== "done" && row.status !== "input")) return "";
-  const { inList } = stats(r);
+  const { done, inList } = stats(r);
+  if (NAVER && row.status === "input") return `<div class="b-sub"><b>네이버 거리 ${done.length}/${r.order.length}곳 입력</b></div>`;
   const names = inList.map((x) => `${esc(x.st.name.replace(/경찰서$/, ""))} ${fmtKm(x.km)}`).join(" · ");
   return `<div class="b-sub"><b>18km 이내 ${inList.length}곳</b>${names ? ` · ${names}` : ""}</div>`;
 }
@@ -1925,7 +1985,7 @@ function printBatch() {
   const rest = readGrid().rows.length - done.length;
   if (rest > 0 && !confirm(`아직 조회하지 않았거나 끝나지 않은 ${rest}명은 빼고 ${done.length}명의 결과지를 만들까요?`)) return;
   $("doc").innerHTML = done.map((row) => `<section class="pg">${docHtml(results.get(row.rid), row)}</section>`).join("");
-  printTitle = `가까운경찰서_일괄_${ymd(new Date())}`;
+  printTitle = `가까운경찰서${NAVER ? "(네이버)" : ""}_일괄_${ymd(new Date())}`;
   openPreview();
 }
 
@@ -2089,12 +2149,31 @@ $("appFoot").textContent = `ⓒ 2026 경기도남부경찰청 경무기획과 �
 showExpired();
 $("batchFoot").textContent = $("appFoot").textContent;
 resetGrid();
+// 지도 기준·화면별 이름과 탭 아이콘
+const FAVICON = {"kakao": "data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2032%2032%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M14.5%202.6%2025%206.4V14c0%206.6-4.4%2011.7-10.5%2014C8.4%2025.7%204%2020.6%204%2014V6.4z%22%20fill%3D%22%233C1E1E%22%2F%3E%3Cpath%20d%3D%22M14.5%2020.4s-4.2-3.7-4.2-7a4.2%204.2%200%200%201%208.4%200c0%203.3-4.2%207-4.2%207z%22%20fill%3D%22%23ffffff%22%2F%3E%3Ccircle%20cx%3D%2214.5%22%20cy%3D%2213.3%22%20r%3D%221.6%22%20fill%3D%22%233C1E1E%22%2F%3E%3Ccircle%20cx%3D%2223.6%22%20cy%3D%2223.6%22%20r%3D%227.6%22%20fill%3D%22%23FEE500%22%20stroke%3D%22%23ffffff%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M22.897506925207757%2026.67700831024931H17.91634349030471V25.43684210526316H19.843213296398893V20.64016620498615H19.75096952908587L18.29556786703601%2022.546537396121884L17.31163434903047%2021.777839335180058L19.023268698060942%2019.522991689750697H21.380609418282546V25.43684210526316H22.897506925207757ZM23.358725761772853%2024.719390581717455Q23.358725761772853%2024.053185595567868%2023.732825484764543%2023.61246537396122Q24.106925207756234%2023.171745152354575%2024.762880886426593%2022.987257617728535V22.90526315789474Q24.209418282548476%2022.700277008310252%2023.89168975069252%2022.290304709141274Q23.573961218836565%2021.8803324099723%2023.573961218836565%2021.285872576177287Q23.573961218836565%2020.732409972299173%2023.860941828254848%2020.30706371191136Q24.14792243767313%2019.88171745152355%2024.701385041551248%2019.640858725761774Q25.254847645429365%2019.400000000000002%2026.02354570637119%2019.400000000000002Q26.79224376731302%2019.400000000000002%2027.345706371191135%2019.640858725761774Q27.89916897506925%2019.88171745152355%2028.186149584487534%2020.30706371191136Q28.473130193905817%2020.732409972299173%2028.473130193905817%2021.285872576177287Q28.473130193905817%2021.8803324099723%2028.15540166204986%2022.290304709141274Q27.837673130193906%2022.700277008310252%2027.28421052631579%2022.90526315789474V22.987257617728535Q27.94016620498615%2023.171745152354575%2028.31426592797784%2023.61246537396122Q28.68836565096953%2024.053185595567868%2028.68836565096953%2024.719390581717455Q28.68836565096953%2025.324099722991694%2028.370637119113574%2025.795567867036013Q28.05290858725762%2026.267036011080336%2027.45332409972299%2026.533518005540166Q26.853739612188367%2026.8%2026.02354570637119%2026.8Q25.193351800554016%2026.8%2024.59376731301939%2026.533518005540166Q23.994182825484764%2026.267036011080336%2023.676454293628808%2025.795567867036013Q23.358725761772853%2025.324099722991694%2023.358725761772853%2024.719390581717455ZM27.02797783933518%2021.603601108033242V21.439612188365654Q27.02797783933518%2021.0398891966759%2026.76662049861496%2020.809279778393353Q26.50526315789474%2020.578670360110806%2026.02354570637119%2020.578670360110806Q25.541828254847644%2020.578670360110806%2025.280470914127424%2020.809279778393353Q25.019113573407203%2021.0398891966759%2025.019113573407203%2021.439612188365654V21.603601108033242Q25.019113573407203%2022.003324099722995%2025.280470914127424%2022.233933518005543Q25.541828254847644%2022.46454293628809%2026.02354570637119%2022.46454293628809Q26.50526315789474%2022.46454293628809%2026.76662049861496%2022.233933518005543Q27.02797783933518%2022.003324099722995%2027.02797783933518%2021.603601108033242ZM27.079224376731304%2024.709141274238227V24.504155124653742Q27.079224376731304%2024.073684210526316%2026.802493074792245%2023.832825484764545Q26.525761772853187%2023.591966759002773%2026.02354570637119%2023.591966759002773Q25.521329639889196%2023.591966759002773%2025.244598337950137%2023.832825484764545Q24.967867036011082%2024.073684210526316%2024.967867036011082%2024.504155124653742V24.709141274238227Q24.967867036011082%2025.139612188365653%2025.244598337950137%2025.380470914127425Q25.521329639889196%2025.621329639889197%2026.02354570637119%2025.621329639889197Q26.525761772853187%2025.621329639889197%2026.802493074792245%2025.380470914127425Q27.079224376731304%2025.139612188365653%2027.079224376731304%2024.709141274238227Z%22%20transform%3D%22translate(23.6%2023.62)%20scale(.88)%20translate(-23%20-23.1)%22%20fill%3D%22%233C1E1E%22%2F%3E%3C%2Fsvg%3E", "kakaoM": "data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2032%2032%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M14.5%202.6%2025%206.4V14c0%206.6-4.4%2011.7-10.5%2014C8.4%2025.7%204%2020.6%204%2014V6.4z%22%20fill%3D%22%23F5CF00%22%2F%3E%3Cpath%20d%3D%22M14.5%2020.4s-4.2-3.7-4.2-7a4.2%204.2%200%200%201%208.4%200c0%203.3-4.2%207-4.2%207z%22%20fill%3D%22%23ffffff%22%2F%3E%3Ccircle%20cx%3D%2214.5%22%20cy%3D%2213.3%22%20r%3D%221.6%22%20fill%3D%22%23F5CF00%22%2F%3E%3Ccircle%20cx%3D%2223.6%22%20cy%3D%2223.6%22%20r%3D%227.6%22%20fill%3D%22%233C1E1E%22%20stroke%3D%22%23ffffff%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M22.897506925207757%2026.67700831024931H17.91634349030471V25.43684210526316H19.843213296398893V20.64016620498615H19.75096952908587L18.29556786703601%2022.546537396121884L17.31163434903047%2021.777839335180058L19.023268698060942%2019.522991689750697H21.380609418282546V25.43684210526316H22.897506925207757ZM23.358725761772853%2024.719390581717455Q23.358725761772853%2024.053185595567868%2023.732825484764543%2023.61246537396122Q24.106925207756234%2023.171745152354575%2024.762880886426593%2022.987257617728535V22.90526315789474Q24.209418282548476%2022.700277008310252%2023.89168975069252%2022.290304709141274Q23.573961218836565%2021.8803324099723%2023.573961218836565%2021.285872576177287Q23.573961218836565%2020.732409972299173%2023.860941828254848%2020.30706371191136Q24.14792243767313%2019.88171745152355%2024.701385041551248%2019.640858725761774Q25.254847645429365%2019.400000000000002%2026.02354570637119%2019.400000000000002Q26.79224376731302%2019.400000000000002%2027.345706371191135%2019.640858725761774Q27.89916897506925%2019.88171745152355%2028.186149584487534%2020.30706371191136Q28.473130193905817%2020.732409972299173%2028.473130193905817%2021.285872576177287Q28.473130193905817%2021.8803324099723%2028.15540166204986%2022.290304709141274Q27.837673130193906%2022.700277008310252%2027.28421052631579%2022.90526315789474V22.987257617728535Q27.94016620498615%2023.171745152354575%2028.31426592797784%2023.61246537396122Q28.68836565096953%2024.053185595567868%2028.68836565096953%2024.719390581717455Q28.68836565096953%2025.324099722991694%2028.370637119113574%2025.795567867036013Q28.05290858725762%2026.267036011080336%2027.45332409972299%2026.533518005540166Q26.853739612188367%2026.8%2026.02354570637119%2026.8Q25.193351800554016%2026.8%2024.59376731301939%2026.533518005540166Q23.994182825484764%2026.267036011080336%2023.676454293628808%2025.795567867036013Q23.358725761772853%2025.324099722991694%2023.358725761772853%2024.719390581717455ZM27.02797783933518%2021.603601108033242V21.439612188365654Q27.02797783933518%2021.0398891966759%2026.76662049861496%2020.809279778393353Q26.50526315789474%2020.578670360110806%2026.02354570637119%2020.578670360110806Q25.541828254847644%2020.578670360110806%2025.280470914127424%2020.809279778393353Q25.019113573407203%2021.0398891966759%2025.019113573407203%2021.439612188365654V21.603601108033242Q25.019113573407203%2022.003324099722995%2025.280470914127424%2022.233933518005543Q25.541828254847644%2022.46454293628809%2026.02354570637119%2022.46454293628809Q26.50526315789474%2022.46454293628809%2026.76662049861496%2022.233933518005543Q27.02797783933518%2022.003324099722995%2027.02797783933518%2021.603601108033242ZM27.079224376731304%2024.709141274238227V24.504155124653742Q27.079224376731304%2024.073684210526316%2026.802493074792245%2023.832825484764545Q26.525761772853187%2023.591966759002773%2026.02354570637119%2023.591966759002773Q25.521329639889196%2023.591966759002773%2025.244598337950137%2023.832825484764545Q24.967867036011082%2024.073684210526316%2024.967867036011082%2024.504155124653742V24.709141274238227Q24.967867036011082%2025.139612188365653%2025.244598337950137%2025.380470914127425Q25.521329639889196%2025.621329639889197%2026.02354570637119%2025.621329639889197Q26.525761772853187%2025.621329639889197%2026.802493074792245%2025.380470914127425Q27.079224376731304%2025.139612188365653%2027.079224376731304%2024.709141274238227Z%22%20transform%3D%22translate(23.6%2023.62)%20scale(.88)%20translate(-23%20-23.1)%22%20fill%3D%22%23FEE500%22%2F%3E%3C%2Fsvg%3E", "naver": "data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2032%2032%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M14.5%202.6%2025%206.4V14c0%206.6-4.4%2011.7-10.5%2014C8.4%2025.7%204%2020.6%204%2014V6.4z%22%20fill%3D%22%2303C75A%22%2F%3E%3Cpath%20d%3D%22M14.5%2020.4s-4.2-3.7-4.2-7a4.2%204.2%200%200%201%208.4%200c0%203.3-4.2%207-4.2%207z%22%20fill%3D%22%23ffffff%22%2F%3E%3Ccircle%20cx%3D%2214.5%22%20cy%3D%2213.3%22%20r%3D%221.6%22%20fill%3D%22%2303C75A%22%2F%3E%3Ccircle%20cx%3D%2223.6%22%20cy%3D%2223.6%22%20r%3D%227.6%22%20fill%3D%22%231E1E1E%22%20stroke%3D%22%23ffffff%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M22.897506925207757%2026.67700831024931H17.91634349030471V25.43684210526316H19.843213296398893V20.64016620498615H19.75096952908587L18.29556786703601%2022.546537396121884L17.31163434903047%2021.777839335180058L19.023268698060942%2019.522991689750697H21.380609418282546V25.43684210526316H22.897506925207757ZM23.358725761772853%2024.719390581717455Q23.358725761772853%2024.053185595567868%2023.732825484764543%2023.61246537396122Q24.106925207756234%2023.171745152354575%2024.762880886426593%2022.987257617728535V22.90526315789474Q24.209418282548476%2022.700277008310252%2023.89168975069252%2022.290304709141274Q23.573961218836565%2021.8803324099723%2023.573961218836565%2021.285872576177287Q23.573961218836565%2020.732409972299173%2023.860941828254848%2020.30706371191136Q24.14792243767313%2019.88171745152355%2024.701385041551248%2019.640858725761774Q25.254847645429365%2019.400000000000002%2026.02354570637119%2019.400000000000002Q26.79224376731302%2019.400000000000002%2027.345706371191135%2019.640858725761774Q27.89916897506925%2019.88171745152355%2028.186149584487534%2020.30706371191136Q28.473130193905817%2020.732409972299173%2028.473130193905817%2021.285872576177287Q28.473130193905817%2021.8803324099723%2028.15540166204986%2022.290304709141274Q27.837673130193906%2022.700277008310252%2027.28421052631579%2022.90526315789474V22.987257617728535Q27.94016620498615%2023.171745152354575%2028.31426592797784%2023.61246537396122Q28.68836565096953%2024.053185595567868%2028.68836565096953%2024.719390581717455Q28.68836565096953%2025.324099722991694%2028.370637119113574%2025.795567867036013Q28.05290858725762%2026.267036011080336%2027.45332409972299%2026.533518005540166Q26.853739612188367%2026.8%2026.02354570637119%2026.8Q25.193351800554016%2026.8%2024.59376731301939%2026.533518005540166Q23.994182825484764%2026.267036011080336%2023.676454293628808%2025.795567867036013Q23.358725761772853%2025.324099722991694%2023.358725761772853%2024.719390581717455ZM27.02797783933518%2021.603601108033242V21.439612188365654Q27.02797783933518%2021.0398891966759%2026.76662049861496%2020.809279778393353Q26.50526315789474%2020.578670360110806%2026.02354570637119%2020.578670360110806Q25.541828254847644%2020.578670360110806%2025.280470914127424%2020.809279778393353Q25.019113573407203%2021.0398891966759%2025.019113573407203%2021.439612188365654V21.603601108033242Q25.019113573407203%2022.003324099722995%2025.280470914127424%2022.233933518005543Q25.541828254847644%2022.46454293628809%2026.02354570637119%2022.46454293628809Q26.50526315789474%2022.46454293628809%2026.76662049861496%2022.233933518005543Q27.02797783933518%2022.003324099722995%2027.02797783933518%2021.603601108033242ZM27.079224376731304%2024.709141274238227V24.504155124653742Q27.079224376731304%2024.073684210526316%2026.802493074792245%2023.832825484764545Q26.525761772853187%2023.591966759002773%2026.02354570637119%2023.591966759002773Q25.521329639889196%2023.591966759002773%2025.244598337950137%2023.832825484764545Q24.967867036011082%2024.073684210526316%2024.967867036011082%2024.504155124653742V24.709141274238227Q24.967867036011082%2025.139612188365653%2025.244598337950137%2025.380470914127425Q25.521329639889196%2025.621329639889197%2026.02354570637119%2025.621329639889197Q26.525761772853187%2025.621329639889197%2026.802493074792245%2025.380470914127425Q27.079224376731304%2025.139612188365653%2027.079224376731304%2024.709141274238227Z%22%20transform%3D%22translate(23.6%2023.62)%20scale(.88)%20translate(-23%20-23.1)%22%20fill%3D%22%23ffffff%22%2F%3E%3C%2Fsvg%3E", "naverM": "data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2032%2032%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M14.5%202.6%2025%206.4V14c0%206.6-4.4%2011.7-10.5%2014C8.4%2025.7%204%2020.6%204%2014V6.4z%22%20fill%3D%22%231E1E1E%22%2F%3E%3Cpath%20d%3D%22M14.5%2020.4s-4.2-3.7-4.2-7a4.2%204.2%200%200%201%208.4%200c0%203.3-4.2%207-4.2%207z%22%20fill%3D%22%23ffffff%22%2F%3E%3Ccircle%20cx%3D%2214.5%22%20cy%3D%2213.3%22%20r%3D%221.6%22%20fill%3D%22%231E1E1E%22%2F%3E%3Ccircle%20cx%3D%2223.6%22%20cy%3D%2223.6%22%20r%3D%227.6%22%20fill%3D%22%2303C75A%22%20stroke%3D%22%23ffffff%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M22.897506925207757%2026.67700831024931H17.91634349030471V25.43684210526316H19.843213296398893V20.64016620498615H19.75096952908587L18.29556786703601%2022.546537396121884L17.31163434903047%2021.777839335180058L19.023268698060942%2019.522991689750697H21.380609418282546V25.43684210526316H22.897506925207757ZM23.358725761772853%2024.719390581717455Q23.358725761772853%2024.053185595567868%2023.732825484764543%2023.61246537396122Q24.106925207756234%2023.171745152354575%2024.762880886426593%2022.987257617728535V22.90526315789474Q24.209418282548476%2022.700277008310252%2023.89168975069252%2022.290304709141274Q23.573961218836565%2021.8803324099723%2023.573961218836565%2021.285872576177287Q23.573961218836565%2020.732409972299173%2023.860941828254848%2020.30706371191136Q24.14792243767313%2019.88171745152355%2024.701385041551248%2019.640858725761774Q25.254847645429365%2019.400000000000002%2026.02354570637119%2019.400000000000002Q26.79224376731302%2019.400000000000002%2027.345706371191135%2019.640858725761774Q27.89916897506925%2019.88171745152355%2028.186149584487534%2020.30706371191136Q28.473130193905817%2020.732409972299173%2028.473130193905817%2021.285872576177287Q28.473130193905817%2021.8803324099723%2028.15540166204986%2022.290304709141274Q27.837673130193906%2022.700277008310252%2027.28421052631579%2022.90526315789474V22.987257617728535Q27.94016620498615%2023.171745152354575%2028.31426592797784%2023.61246537396122Q28.68836565096953%2024.053185595567868%2028.68836565096953%2024.719390581717455Q28.68836565096953%2025.324099722991694%2028.370637119113574%2025.795567867036013Q28.05290858725762%2026.267036011080336%2027.45332409972299%2026.533518005540166Q26.853739612188367%2026.8%2026.02354570637119%2026.8Q25.193351800554016%2026.8%2024.59376731301939%2026.533518005540166Q23.994182825484764%2026.267036011080336%2023.676454293628808%2025.795567867036013Q23.358725761772853%2025.324099722991694%2023.358725761772853%2024.719390581717455ZM27.02797783933518%2021.603601108033242V21.439612188365654Q27.02797783933518%2021.0398891966759%2026.76662049861496%2020.809279778393353Q26.50526315789474%2020.578670360110806%2026.02354570637119%2020.578670360110806Q25.541828254847644%2020.578670360110806%2025.280470914127424%2020.809279778393353Q25.019113573407203%2021.0398891966759%2025.019113573407203%2021.439612188365654V21.603601108033242Q25.019113573407203%2022.003324099722995%2025.280470914127424%2022.233933518005543Q25.541828254847644%2022.46454293628809%2026.02354570637119%2022.46454293628809Q26.50526315789474%2022.46454293628809%2026.76662049861496%2022.233933518005543Q27.02797783933518%2022.003324099722995%2027.02797783933518%2021.603601108033242ZM27.079224376731304%2024.709141274238227V24.504155124653742Q27.079224376731304%2024.073684210526316%2026.802493074792245%2023.832825484764545Q26.525761772853187%2023.591966759002773%2026.02354570637119%2023.591966759002773Q25.521329639889196%2023.591966759002773%2025.244598337950137%2023.832825484764545Q24.967867036011082%2024.073684210526316%2024.967867036011082%2024.504155124653742V24.709141274238227Q24.967867036011082%2025.139612188365653%2025.244598337950137%2025.380470914127425Q25.521329639889196%2025.621329639889197%2026.02354570637119%2025.621329639889197Q26.525761772853187%2025.621329639889197%2026.802493074792245%2025.380470914127425Q27.079224376731304%2025.139612188365653%2027.079224376731304%2024.709141274238227Z%22%20transform%3D%22translate(23.6%2023.62)%20scale(.88)%20translate(-23%20-23.1)%22%20fill%3D%22%23ffffff%22%2F%3E%3C%2Fsvg%3E"};
+for (const el of document.querySelectorAll(".brand-map")) el.textContent = MAP_NAME;
+document.querySelector('meta[name="theme-color"]').content = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();
+document.querySelector('link[rel="icon"]').href = FAVICON[(NAVER ? "naver" : "kakao") + (APP_MODE === "batch" ? "M" : "")];
+document.querySelector('meta[name="apple-mobile-web-app-title"]').content = `near18${NAVER ? "N" : ""}${APP_MODE === "batch" ? "(M)" : ""}`;
+if (NAVER) document.title = "우리집에서 가까운 경찰서 찾기 (네이버지도)";
+// 네이버지도 버튼: 휴대폰은 앱을 먼저 열고, 앱이 안 열리면 웹으로 여는 링크를 띄운다
+document.addEventListener("click", (e) => {
+  const a = e.target.closest("a.b-map[data-app]");
+  if (!a || !a.dataset.app || !isPhone()) return;
+  e.preventDefault();
+  location.href = a.dataset.app;
+  setTimeout(() => {
+    if (document.hidden) return;
+    const t = $("appMiss");
+    t.querySelector("a").href = a.href;
+    t.hidden = false;
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { t.hidden = true; }, 10000);
+  }, 1500);
+});
 if (APP_MODE === "batch") {
   document.body.classList.add("hr-app");
-  document.title = "우리집에서 가까운 경찰서 찾기 (담당자용)";
-  // 탭 아이콘도 담당자용(머스터드 방패·테라코타 18)으로
-  document.querySelector('link[rel="icon"]').href = "data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2032%2032%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M14.5%202.6%2025%206.4V14c0%206.6-4.4%2011.7-10.5%2014C8.4%2025.7%204%2020.6%204%2014V6.4z%22%20fill%3D%22%23e2a23a%22%2F%3E%3Cpath%20d%3D%22M14.5%2020.4s-4.2-3.7-4.2-7a4.2%204.2%200%200%201%208.4%200c0%203.3-4.2%207-4.2%207z%22%20fill%3D%22%23ffffff%22%2F%3E%3Ccircle%20cx%3D%2214.5%22%20cy%3D%2213.3%22%20r%3D%221.6%22%20fill%3D%22%23e2a23a%22%2F%3E%3Ccircle%20cx%3D%2223.6%22%20cy%3D%2223.6%22%20r%3D%227.6%22%20fill%3D%22%23b0532c%22%20stroke%3D%22%23ffffff%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M22.897506925207757%2026.67700831024931H17.91634349030471V25.43684210526316H19.843213296398893V20.64016620498615H19.75096952908587L18.29556786703601%2022.546537396121884L17.31163434903047%2021.777839335180058L19.023268698060942%2019.522991689750697H21.380609418282546V25.43684210526316H22.897506925207757ZM23.358725761772853%2024.719390581717455Q23.358725761772853%2024.053185595567868%2023.732825484764543%2023.61246537396122Q24.106925207756234%2023.171745152354575%2024.762880886426593%2022.987257617728535V22.90526315789474Q24.209418282548476%2022.700277008310252%2023.89168975069252%2022.290304709141274Q23.573961218836565%2021.8803324099723%2023.573961218836565%2021.285872576177287Q23.573961218836565%2020.732409972299173%2023.860941828254848%2020.30706371191136Q24.14792243767313%2019.88171745152355%2024.701385041551248%2019.640858725761774Q25.254847645429365%2019.400000000000002%2026.02354570637119%2019.400000000000002Q26.79224376731302%2019.400000000000002%2027.345706371191135%2019.640858725761774Q27.89916897506925%2019.88171745152355%2028.186149584487534%2020.30706371191136Q28.473130193905817%2020.732409972299173%2028.473130193905817%2021.285872576177287Q28.473130193905817%2021.8803324099723%2028.15540166204986%2022.290304709141274Q27.837673130193906%2022.700277008310252%2027.28421052631579%2022.90526315789474V22.987257617728535Q27.94016620498615%2023.171745152354575%2028.31426592797784%2023.61246537396122Q28.68836565096953%2024.053185595567868%2028.68836565096953%2024.719390581717455Q28.68836565096953%2025.324099722991694%2028.370637119113574%2025.795567867036013Q28.05290858725762%2026.267036011080336%2027.45332409972299%2026.533518005540166Q26.853739612188367%2026.8%2026.02354570637119%2026.8Q25.193351800554016%2026.8%2024.59376731301939%2026.533518005540166Q23.994182825484764%2026.267036011080336%2023.676454293628808%2025.795567867036013Q23.358725761772853%2025.324099722991694%2023.358725761772853%2024.719390581717455ZM27.02797783933518%2021.603601108033242V21.439612188365654Q27.02797783933518%2021.0398891966759%2026.76662049861496%2020.809279778393353Q26.50526315789474%2020.578670360110806%2026.02354570637119%2020.578670360110806Q25.541828254847644%2020.578670360110806%2025.280470914127424%2020.809279778393353Q25.019113573407203%2021.0398891966759%2025.019113573407203%2021.439612188365654V21.603601108033242Q25.019113573407203%2022.003324099722995%2025.280470914127424%2022.233933518005543Q25.541828254847644%2022.46454293628809%2026.02354570637119%2022.46454293628809Q26.50526315789474%2022.46454293628809%2026.76662049861496%2022.233933518005543Q27.02797783933518%2022.003324099722995%2027.02797783933518%2021.603601108033242ZM27.079224376731304%2024.709141274238227V24.504155124653742Q27.079224376731304%2024.073684210526316%2026.802493074792245%2023.832825484764545Q26.525761772853187%2023.591966759002773%2026.02354570637119%2023.591966759002773Q25.521329639889196%2023.591966759002773%2025.244598337950137%2023.832825484764545Q24.967867036011082%2024.073684210526316%2024.967867036011082%2024.504155124653742V24.709141274238227Q24.967867036011082%2025.139612188365653%2025.244598337950137%2025.380470914127425Q25.521329639889196%2025.621329639889197%2026.02354570637119%2025.621329639889197Q26.525761772853187%2025.621329639889197%2026.802493074792245%2025.380470914127425Q27.079224376731304%2025.139612188365653%2027.079224376731304%2024.709141274238227Z%22%20transform%3D%22translate(23.6%2023.62)%20scale(.88)%20translate(-23%20-23.1)%22%20fill%3D%22%23fffaf2%22%2F%3E%3C%2Fsvg%3E";
-  document.querySelector('meta[name="apple-mobile-web-app-title"]').content = "near18(M)";
+  document.title = `우리집에서 가까운 경찰서 찾기 (${NAVER ? "네이버지도·" : ""}담당자용)`;
   $("viewSeg").hidden = false;
   setView("batch");
 }
