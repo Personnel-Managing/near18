@@ -26,7 +26,8 @@ document.documentElement.classList.add("brand-" + MAP_BRAND);
   --bg:#f8f8f6;--surface:#ffffff;--ink:#191919;--ink2:#5c5c5c;--ink3:#9a9a9a;--line:#ececec;--line2:#dcdcdc;
   --primary:#fee500;--primary-hover:#f2d900;--on-primary:#191919;--primary-soft:#fff8c7;--accent:#3c1e1e;--focus:#d9bf00;--ring:rgba(254,229,0,.4);
   --logo:#3c1e1e;--logo-badge:#fee500;--logo-num:#3c1e1e;--hero-dot:rgba(60,30,30,.07);
-  --in:#2f7d32;--in-soft:#e8f4e8;--over:#cfcfcf;--track:#f0f0ee;--limit:#d4475b;
+  --in:#3c1e1e;--in-big:#3c1e1e;--in-soft:#fff8c7;--in-bar:linear-gradient(90deg,#ffee6b,#fee500);--in-badge:#fee500;--on-in-badge:#3c1e1e;
+  --over:#d6d6d6;--track:#f0f0ee;--limit:#d4475b;--callout:#fff8c7;--on-callout:#3c1e1e;
   --warn:#8f5d00;--warn-soft:#fff3d9;--bad:#b3261e;--bad-soft:#fbeaea;
   --radius:20px;--shadow:0 1px 2px rgba(0,0,0,.05),0 8px 28px rgba(0,0,0,.07);
 }
@@ -35,13 +36,12 @@ html.brand-naver{
   --bg:#f5f8f6;--surface:#ffffff;--ink:#1e1e1e;--ink2:#5a5f5c;--ink3:#9aa09c;--line:#e6ebe8;--line2:#d4dbd7;
   --primary:#03c75a;--primary-hover:#02b350;--on-primary:#ffffff;--primary-soft:#e5f8ec;--accent:#00873c;--focus:#03c75a;--ring:rgba(3,199,90,.2);
   --logo:#03c75a;--logo-badge:#1e1e1e;--logo-num:#ffffff;--hero-dot:rgba(3,199,90,.09);
-  --in:#00873c;--in-soft:#e5f8ec;--track:#edf2ef;
+  --in:#00873c;--in-big:#00a84c;--in-soft:#e5f8ec;--in-bar:linear-gradient(90deg,#7ee2a8,#03c75a);--in-badge:#03c75a;--on-in-badge:#ffffff;
+  --track:#edf2ef;--callout:#e5f8ec;--on-callout:#00632c;
 }
 /* 담당자용 로고: 앱 아이콘과 같은 색 */
 html.brand-kakao .hr-app{--logo:#f5cf00;--logo-badge:#3c1e1e;--logo-num:#fee500}
 html.brand-naver .hr-app{--logo:#1e1e1e;--logo-badge:#03c75a;--logo-num:#ffffff}
-/* 일괄 조회 화면은 남색으로 구분한다 */
-body.batching{--primary:#2e4a75;--primary-hover:#233a5c;--on-primary:#ffffff;--primary-soft:#e3e9f2;--accent:#2e4a75;--focus:#2e4a75;--ring:rgba(46,74,117,.16)}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{margin:0}
@@ -140,8 +140,8 @@ body.chatting .top{border-bottom-color:var(--line)}
 .r-addr{font-size:15.5px;color:var(--ink2);display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:2px}
 .link-btn{border:none;background:none;padding:0;font-size:14.5px;font-weight:700;color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .r-count{flex:none;text-align:right;line-height:1.1}
-.r-count b{font-size:48px;font-weight:800;color:var(--in);letter-spacing:-1px;font-variant-numeric:tabular-nums}
-.r-count span{font-size:19px;font-weight:700;color:var(--in);margin-left:2px}
+.r-count b{font-size:48px;font-weight:800;color:var(--in-big);letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.r-count span{font-size:19px;font-weight:700;color:var(--in-big);margin-left:2px}
 .r-count small{display:block;font-size:14.5px;color:var(--ink2);font-weight:600;margin-top:4px}
 .r-count.none b,.r-count.none span{color:var(--ink3)}
 .r-meta{margin:12px 0 0;font-size:14.5px;color:var(--ink2)}
@@ -155,14 +155,14 @@ body.chatting .top{border-bottom-color:var(--line)}
 .scale i.max{right:0;transform:none}
 .scale i.zero{left:0;transform:none}
 .bars{list-style:none;margin:0;padding:0}
-.bar-row{padding:11px 0;border-top:1px solid #f2e9dd}
+.bar-row{padding:11px 0;border-top:1px solid var(--line)}
 .b-name{min-width:0}
 .b-name b{display:block;font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .b-name small{display:block;font-size:13px;color:var(--ink3)}
 .b-name small.fail{color:var(--warn);font-weight:600}
 .b-track{position:relative;height:12px;border-radius:999px;background:var(--track)}
 .b-fill{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:var(--over);transition:width .5s cubic-bezier(.2,.8,.2,1)}
-.bar-row.in .b-fill{background:linear-gradient(90deg,#93bd76,var(--in))}
+.bar-row.in .b-fill{background:var(--in-bar)}
 .b-km{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .b-km b{font-size:20px;font-weight:800}
 .bar-row.in .b-km b{color:var(--in)}
@@ -182,12 +182,12 @@ body.chatting .top{border-bottom-color:var(--line)}
 .inputs{margin-top:8px}
 .none-note{margin-top:16px;border-radius:12px;padding:16px;background:var(--track);color:var(--ink2);text-align:center;font-weight:600}
 
-.callout{margin-top:16px;display:flex;gap:10px;align-items:center;border-radius:14px;padding:14px 16px;background:#f7ead3;color:#6b4a1e;font-weight:700;font-size:17px}
+.callout{margin-top:16px;display:flex;gap:10px;align-items:center;border-radius:14px;padding:14px 16px;background:var(--callout);color:var(--on-callout);font-weight:700;font-size:17px}
 .callout svg{width:20px;height:20px;flex:none}
 .r-actions{display:flex;justify-content:flex-end;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px}
 .r-actions .hint{font-size:14.5px;color:var(--ink2)}
 .btn{border:1px solid var(--line2);background:var(--surface);border-radius:999px;padding:12px 22px;font-size:16.5px;font-weight:700;cursor:pointer}
-.btn:hover{background:#fbf5ee}
+.btn:hover{background:var(--primary-soft)}
 .btn.primary{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
 .btn.primary:hover{background:var(--primary-hover)}
 .btn:disabled{opacity:.4;cursor:not-allowed}
@@ -245,7 +245,7 @@ body.chatting .top{border-bottom-color:var(--line)}
 .b-state{display:flex;align-items:center;gap:10px;justify-content:flex-end}
 .badge{display:inline-block;border-radius:999px;padding:4px 10px;font-size:13.5px;font-weight:700;white-space:nowrap;background:var(--track);color:var(--ink2)}
 .st-run .badge{background:var(--primary-soft);color:var(--accent)}
-.st-done .badge{background:var(--in-soft);color:var(--in)}
+.st-done .badge{background:var(--in-badge);color:var(--on-in-badge)}
 .st-pick .badge,.st-input .badge,.st-fail .badge{background:var(--warn-soft);color:var(--warn)}
 .b-link{border:none;background:none;color:var(--accent);font-weight:700;cursor:pointer;padding:0;font-size:14px;text-decoration:underline;text-underline-offset:2px}
 .b-detail{margin:12px 0 2px 64px}
