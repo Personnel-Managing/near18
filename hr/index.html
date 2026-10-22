@@ -987,11 +987,12 @@ function kakaoMapLink(r, st) {
   return `https://map.kakao.com/link/search/${encodeURIComponent(st.name)}`;
 }
 
-// 네이버지도 자동차 길찾기. PC는 웹 지도(좌표는 웹 메르카토르), 휴대폰은 네이버지도 앱을 먼저 연다.
+// 네이버지도 자동차 길찾기. PC는 웹 지도(좌표는 웹 메르카토르), 휴대폰은 네이버지도 앱을 연다.
+// 앱 주소는 네이버 공식 URL Scheme 안내대로 안드로이드는 intent://, 아이폰은 nmap:// 형식이다.
 const mercator = ([lng, lat]) => [lng * 20037508.34 / 180, Math.log(Math.tan(((90 + lat) * Math.PI) / 360)) * 20037508.34 / Math.PI];
 function naverWebLink(r, st) {
   const to = r.located.get(st.name), from = r.home.xy;
-  const pt = (xy, name) => { const [x, y] = mercator(xy); return `${x.toFixed(4)},${y.toFixed(4)},${encodeURIComponent(name.replace(/[,/]/g, " "))},,ADDRESS_POI`; };
+  const pt = (xy, name) => { const [x, y] = mercator(xy); return `${x.toFixed(7)},${y.toFixed(7)},${encodeURIComponent(name.replace(/[,/]/g, " "))},,ADDRESS_POI`; };
   if (to && from) return `https://map.naver.com/p/directions/${pt(from, r.home.bldg || "주거지")}/${pt(to, st.name)}/-/car`;
   return `https://map.naver.com/p/search/${encodeURIComponent(st.name)}`;
 }
@@ -999,8 +1000,12 @@ function naverAppLink(r, st) {
   const to = r.located.get(st.name), from = r.home.xy;
   if (!to || !from) return "";
   const q = { slat: from[1], slng: from[0], sname: r.home.bldg || "주거지", dlat: to[1], dlng: to[0], dname: st.name, appname: /^https?:/.test(location.origin) ? location.origin : "near18" };
-  return `nmap://route/car?${Object.entries(q).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&")}`;
+  const path = `route/car?${Object.entries(q).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&")}`;
+  return isAndroid()
+    ? `intent://${path}#Intent;scheme=nmap;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=com.nhn.android.nmap;end`
+    : `nmap://${path}`;
 }
+const isAndroid = () => /Android/i.test(navigator.userAgent);
 const isPhone = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 // 후보 경찰서의 거리우선 거리를 4곳씩 나눠 조회한다. 정책상 결과는 저장하지 않고 조회할 때마다 새로 받는다.
@@ -1112,8 +1117,16 @@ function stepsHtml(st) {
 }
 
 const cityText = (r, st) => (st.city === r.home.city ? "같은 시·군" : esc(st.city));
+// 휴대폰은 버튼 자체가 앱 주소다 (스크립트로 주소를 바꾸면 홈 화면 앱·인앱 브라우저에서 막히는 경우가 있다)
+function naverBtn(r, st) {
+  const web = naverWebLink(r, st), app = isPhone() ? naverAppLink(r, st) : "";
+  const label = `title="네이버지도 길찾기 (경로 목록에서 '거리우선' 거리를 확인)" aria-label="${esc(st.name)} 네이버지도 길찾기"`;
+  return app
+    ? `<a class="b-map" href="${esc(app)}" data-web="${esc(web)}" ${label}>${ICON.map}</a>`
+    : `<a class="b-map" href="${esc(web)}" target="_blank" rel="noopener" ${label}>${ICON.map}</a>`;
+}
 const mapBtn = (r, st) => NAVER
-  ? `<a class="b-map" href="${naverWebLink(r, st)}" data-app="${esc(naverAppLink(r, st))}" target="_blank" rel="noopener" title="네이버지도 길찾기 (경로 목록에서 '거리우선' 거리를 확인)" aria-label="${esc(st.name)} 네이버지도 길찾기">${ICON.map}</a>`
+  ? naverBtn(r, st)
   : `<a class="b-map" href="${kakaoMapLink(r, st)}" target="_blank" rel="noopener" title="카카오맵 길찾기 (경로 옵션을 '거리우선'으로 바꿔 확인)" aria-label="${esc(st.name)} 카카오맵 길찾기">${ICON.map}</a>`;
 
 // 제안 목록: 카카오맵 거리우선 18.0km 이내 경찰서만 보여 준다.
@@ -2156,21 +2169,21 @@ document.querySelector('meta[name="theme-color"]').content = getComputedStyle(do
 document.querySelector('link[rel="icon"]').href = FAVICON[(NAVER ? "naver" : "kakao") + (APP_MODE === "batch" ? "M" : "")];
 document.querySelector('meta[name="apple-mobile-web-app-title"]').content = `near18${NAVER ? "N" : ""}${APP_MODE === "batch" ? "(M)" : ""}`;
 if (NAVER) document.title = "우리집에서 가까운 경찰서 찾기 (네이버지도)";
-// 네이버지도 버튼: 휴대폰은 앱을 먼저 열고, 앱이 안 열리면 웹으로 여는 링크를 띄운다
+// 네이버지도 버튼(휴대폰): 앱이 열리면 화면이 가려진다. 잠시 뒤에도 그대로면 웹으로 여는 링크를 띄운다.
 document.addEventListener("click", (e) => {
-  const a = e.target.closest("a.b-map[data-app]");
-  if (!a || !a.dataset.app || !isPhone()) return;
-  e.preventDefault();
-  location.href = a.dataset.app;
-  setTimeout(() => {
+  const a = e.target.closest("a.b-map[data-web]");
+  if (!a) return;
+  const t = $("appMiss");
+  clearTimeout(t._wait);
+  t._wait = setTimeout(() => {
     if (document.hidden) return;
-    const t = $("appMiss");
-    t.querySelector("a").href = a.href;
+    t.querySelector("a").href = a.dataset.web;
     t.hidden = false;
     clearTimeout(t._timer);
     t._timer = setTimeout(() => { t.hidden = true; }, 10000);
-  }, 1500);
+  }, 2000);
 });
+document.addEventListener("visibilitychange", () => { if (document.hidden) clearTimeout($("appMiss")._wait); });
 if (APP_MODE === "batch") {
   document.body.classList.add("hr-app");
   document.title = `우리집에서 가까운 경찰서 찾기 (${NAVER ? "네이버지도·" : ""}담당자용)`;
