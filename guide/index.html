@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; media-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#f8f8f6">
+<title>near18 사용법 영상</title>
+<link rel="icon" href="../icons/icon-192.png">
+<style>
+:root{--bg:#f8f8f6;--surface:#fff;--ink:#191919;--ink2:#5c5c5c;--ink3:#9a9a9a;--line:#ececec;--line2:#dcdcdc;--primary:#fee500;--on-primary:#191919;--soft:#fff8c7;--accent:#3c1e1e}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased;word-break:keep-all}
+.wrap{max-width:980px;margin:0 auto;padding:20px 16px 40px}
+header{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}
+header img{width:34px;height:34px;border-radius:8px}
+header a{margin-left:auto;font-size:15px;font-weight:600;color:var(--ink2)}
+h1{font-size:28px;margin:22px 0 4px;letter-spacing:-.5px}
+.sub{margin:0 0 16px;color:var(--ink2)}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:999px;padding:3px;background:var(--surface);margin-bottom:14px}
+.seg button{border:0;background:none;border-radius:999px;padding:7px 16px;font:inherit;font-size:15px;font-weight:700;color:var(--ink2);cursor:pointer}
+.seg button.on{background:var(--primary);color:var(--on-primary)}
+.player{background:#111;border-radius:16px;overflow:hidden}
+video{display:block;width:100%;aspect-ratio:16/9;max-height:78vh;background:#111}
+.portrait video{aspect-ratio:9/16;max-height:80vh}
+.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;font-size:15px;font-weight:700;color:var(--ink2)}
+.speeds{display:flex;gap:5px;flex-wrap:wrap}
+.speeds button{border:1px solid var(--line2);background:var(--surface);border-radius:999px;padding:5px 13px;font:inherit;font-size:15px;font-weight:700;color:var(--ink2);cursor:pointer}
+.speeds button.on{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
+.chapters{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.chapters button{border:0;background:#efefec;border-radius:10px;padding:7px 11px;font:inherit;font-size:15px;color:var(--ink);cursor:pointer}
+.chapters button.on{background:var(--soft);color:var(--accent);font-weight:700}
+.chapters small{color:var(--ink3);margin-right:6px}
+.note{margin-top:18px;font-size:14px;color:var(--ink3)}
+.note a{color:var(--ink2)}
+@media (min-width:760px){.layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start}.portrait .player{max-width:460px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><img src="../icons/icon-192.png" alt="">near18<a href="../">near18 열기</a></header>
+  <h1>사용법 영상</h1>
+  <p class="sub">우리집에서 가까운 경찰서 찾기 · 기본 1.5배속으로 재생합니다.</p>
+  <div class="seg" id="seg"><button type="button" data-v="staff">직원용</button><button type="button" data-v="hr">담당자용</button></div>
+  <div class="layout" id="layout">
+    <div>
+      <div class="player"><video id="v" controls playsinline preload="metadata"></video></div>
+      <div class="bar"><span>재생 속도</span><div class="speeds" id="speeds"><button type="button" data-rate="1">1배</button><button type="button" data-rate="1.25">1.25</button><button type="button" data-rate="1.5">1.5</button><button type="button" data-rate="1.75">1.75</button><button type="button" data-rate="2">2배</button></div></div>
+    </div>
+    <div class="chapters" id="chapters"></div>
+  </div>
+  <p class="note">음성은 AI로 합성했습니다(Supertonic 3). 화면에 나오는 이름·생년월일·소속은 예시입니다. <a id="dl" href="#" download>영상 파일 받기</a></p>
+</div>
+<script>
+// 장 목록은 영상을 만들 때 함께 적는다 (초, 장 이름)
+const GUIDES = {
+  staff: { file: "near18-staff", portrait: true, chapters: [[0, "시작하기"], [13, "열기·홈 화면에 추가"], [29, "주소 입력"], [43, "비밀번호 (처음 한 번)"], [58, "결과 보기"], [85, "결과지 PDF"], [110, "네이버지도 기준 버전"], [135, "알아 두세요"]] },
+  hr: { file: "near18-hr", portrait: false, chapters: [[0, "시작하기"], [16, "명단 준비"], [35, "파일 넣기"], [48, "조회"], [64, "주소 고치기"], [70, "결과지 일괄 인쇄"], [82, "알아 두세요"]] },
+};
+const RATE_KEY = "near18.guideRate";
+const $ = (id) => document.getElementById(id);
+let rate = 1.5, now = "";
+try { rate = +localStorage.getItem(RATE_KEY) || 1.5; } catch (e) { /* 기억하지 못하면 1.5배속 */ }
+const fmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+function setRate(r) {
+  rate = r; $("v").defaultPlaybackRate = r; $("v").playbackRate = r;
+  for (const b of $("speeds").children) b.classList.toggle("on", +b.dataset.rate === r);
+  try { localStorage.setItem(RATE_KEY, String(r)); } catch (e) { /* 이번에만 */ }
+}
+function load(key) {
+  const g = GUIDES[key] || GUIDES.staff; now = key in GUIDES ? key : "staff";
+  document.body.classList.toggle("portrait", g.portrait);
+  for (const b of $("seg").children) b.classList.toggle("on", b.dataset.v === now);
+  $("v").poster = `${g.file}.jpg`; $("v").src = `${g.file}.mp4`; $("dl").href = `${g.file}.mp4`;
+  $("chapters").innerHTML = g.chapters.map(([t, n]) => `<button type="button" data-t="${t}"><small>${fmt(t)}</small>${n}</button>`).join("");
+  setRate(rate);
+  history.replaceState(null, "", `#${now}`);
+}
+$("seg").addEventListener("click", (e) => { const b = e.target.closest("[data-v]"); if (b && b.dataset.v !== now) load(b.dataset.v); });
+$("speeds").addEventListener("click", (e) => { const b = e.target.closest("[data-rate]"); if (b) setRate(+b.dataset.rate); });
+$("chapters").addEventListener("click", (e) => { const b = e.target.closest("[data-t]"); if (!b) return; $("v").currentTime = +b.dataset.t; $("v").play().catch(() => {}); });
+$("v").addEventListener("loadedmetadata", () => setRate(rate));
+$("v").addEventListener("timeupdate", () => {
+  const t = $("v").currentTime, bs = [...$("chapters").children];
+  bs.forEach((b, i) => b.classList.toggle("on", t >= +b.dataset.t && (i === bs.length - 1 || t < +bs[i + 1].dataset.t)));
+});
+load(location.hash.slice(1) || "staff");
+</script>
+</body>
+</html>
